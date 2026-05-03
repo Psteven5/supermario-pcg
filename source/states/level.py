@@ -75,7 +75,129 @@ class Level(tools.State):
         f = open(file_path)
         self.map_data = json.load(f)
         f.close()
-    
+
+        # Keep track of the base chunk to add this later for infinite level
+        self.base_data = self.map_data.copy()
+        self.current_chunk = 0
+        self.chunk_size = self.map_data[c.MAP_MAPS][0]['end_x'] 
+
+    def check_for_chunk(self):
+        # build next chunk when halfway current chunk
+        if self.player.rect.x > self.chunk_size * self.current_chunk + self.chunk_size/2:
+            self.current_chunk += 1
+            self.load_next_chunk()
+
+            # self.end_x = self.chunk_size * (self.current_chunk + 1)
+            # TODO? dynamic window switching?
+            # old_width = self.level.get_width()
+            # if self.end_x > old_width:
+            #     self.level = pg.Surface((self.end_x, c.SCREEN_HEIGHT)).convert()
+
+    def load_next_chunk(self):
+        # TODO: use load_map to change self.map_data to new level from generated new json file?
+        offset_x = self.chunk_size * self.current_chunk
+        new_map_data = json.loads(json.dumps(self.base_data))
+        for data in new_map_data:
+            if isinstance(new_map_data[data], list):
+                for item in new_map_data[data]:
+                    if isinstance(item, dict) and 'x' in item:
+                        item['x'] += offset_x
+                    elif isinstance(item, dict) and 'start_x' in item:
+                        item['start_x'] += offset_x
+                        item['end_x'] += offset_x
+                    elif isinstance(item, dict):
+                        for key in item:
+                            if isinstance(item[key], list):
+                                for enemy_item in item[key]:
+                                    if isinstance(enemy_item, dict) and 'x' in enemy_item:
+                                        enemy_item['x'] += offset_x
+        self.add_chunk_to_map_data(new_map_data)
+
+    def add_chunk_to_map_data(self, map_data):
+        #TODO: make use of existing functions (change functions a bit)
+        enemy_group_offset = len(self.enemy_group_list)
+
+        if c.MAP_GROUND in map_data:
+            for item in map_data[c.MAP_GROUND]:
+                collider = stuff.Collider(item['x'], item['y'], item['width'], item['height'], c.MAP_GROUND)
+                collider.image = pg.Surface((collider.rect.width, collider.rect.height))
+                collider.image.fill((100, 200, 100)) # Green ground
+                self.ground_group.add(collider)
+        
+        if c.MAP_PIPE in map_data:
+            for item in map_data[c.MAP_PIPE]:
+                self.pipe_group.add(stuff.Pipe(item['x'], item['y'], item['width'], item['height'], item['type']))
+                
+        if c.MAP_COIN in map_data:
+            for item in map_data[c.MAP_COIN]:
+                self.static_coin_group.add(coin.StaticCoin(item['x'], item['y']))
+
+        if c.MAP_BRICK in map_data:
+            for item in map_data[c.MAP_BRICK]:
+                brick.create_brick(self.brick_group, item, self)
+        
+        if c.MAP_BOX in map_data:
+            for item in map_data[c.MAP_BOX]:
+                if item['type'] == c.TYPE_COIN:
+                    self.box_group.add(box.Box(item['x'], item['y'], item['type'], self.coin_group))
+                else:
+                    self.box_group.add(box.Box(item['x'], item['y'], item['type'], self.powerup_group))
+        
+        if c.MAP_ENEMY in map_data:
+            for data in map_data[c.MAP_ENEMY]:
+                group = pg.sprite.Group()
+                for key in data:
+                    for item in data[key]:
+                        group.add(enemy.create_enemy(item, self))
+                self.enemy_group_list.append(group)
+        
+        if c.MAP_CHECKPOINT in map_data:
+            for data in map_data[c.MAP_CHECKPOINT]:
+                if c.ENEMY_GROUPID in data:
+                    enemy_groupid = data[c.ENEMY_GROUPID] + enemy_group_offset
+                else:
+                    enemy_groupid = 0
+                if c.MAP_INDEX in data:
+                    map_index = data[c.MAP_INDEX]
+                else:
+                    map_index = 0
+                self.checkpoint_group.add(stuff.Checkpoint(data['x'], data['y'], data['width'], 
+                    data['height'], data['type'], enemy_groupid, map_index))
+        
+        if c.MAP_FLAGPOLE in map_data:
+            for item in map_data[c.MAP_FLAGPOLE]:
+                if item['type'] == c.FLAGPOLE_TYPE_FLAG:
+                    sprite = stuff.Flag(item['x'], item['y'])
+                    self.flag = sprite
+                elif item['type'] == c.FLAGPOLE_TYPE_POLE:
+                    sprite = stuff.Pole(item['x'], item['y'])
+                else:
+                    sprite = stuff.PoleTop(item['x'], item['y'])
+                self.flagpole_group.add(sprite)
+        
+        if c.MAP_STEP in map_data:
+            for item in map_data[c.MAP_STEP]:
+                collider = stuff.Collider(item['x'], item['y'], item['width'], item['height'], c.MAP_STEP)
+                collider.image = pg.Surface((collider.rect.width, collider.rect.height))
+                collider.image.fill((200, 150, 100)) # Brown steps
+                self.step_group.add(collider)
+
+        if c.MAP_SLIDER in map_data:
+            for item in map_data[c.MAP_SLIDER]:
+                if c.VELOCITY in item:
+                    vel = item[c.VELOCITY]
+                else:
+                    vel = 1
+                self.slider_group.add(stuff.Slider(item['x'], item['y'], item['num'],
+                    item['direction'], item['range_start'], item['range_end'], vel))
+        
+        self.ground_step_pipe_group.add(
+            self.pipe_group,
+            self.ground_group,
+            self.step_group,
+            self.slider_group
+        )
+
     # Function to set up the level background
     def setup_background(self):
         img_name = self.map_data[c.MAP_IMAGE]
@@ -86,7 +208,7 @@ class Level(tools.State):
                                     int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)))
         self.bg_rect = self.background.get_rect()
 
-        self.level = pg.Surface((self.bg_rect.w, self.bg_rect.h)).convert()
+        self.level = pg.Surface((self.chunk_size * 5, c.SCREEN_HEIGHT)).convert() #TODO
         self.viewport = setup.SCREEN.get_rect(bottom=self.bg_rect.bottom)
 
     # Function to set up the different maps for the level
@@ -98,7 +220,7 @@ class Level(tools.State):
             self.start_x, self.end_x, self.player_x, self.player_y = self.map_list[0]
         else:
             self.start_x = 0
-            self.end_x = self.bg_rect.w
+            self.end_x = self.chunk_size * 5 #TODO
             self.player_x = 110
             self.player_y = c.GROUND_HEIGHT
     
@@ -121,8 +243,14 @@ class Level(tools.State):
         group = pg.sprite.Group()
         if name in self.map_data:
             for data in self.map_data[name]:
-                group.add(stuff.Collider(data['x'], data['y'], 
-                        data['width'], data['height'], name))
+                collider = stuff.Collider(data['x'], data['y'], data['width'], data['height'], name)
+                collider.image = pg.Surface((collider.rect.width, collider.rect.height))
+                # green = ground, brown = steps
+                if name == c.MAP_GROUND:
+                    collider.image.fill((100, 200, 100)) # Green ground
+                else:
+                    collider.image.fill((200, 150, 100)) # Brown steps
+                group.add(collider)
         return group
 
     # Function to set up pipe objects on the map
@@ -259,6 +387,7 @@ class Level(tools.State):
         else:
             self.player.update(keys, self.game_info, self.powerup_group)
             self.flagpole_group.update()
+            self.check_for_chunk()
             self.check_checkpoints()
             self.slider_group.update()
             self.static_coin_group.update(self.game_info)
@@ -282,19 +411,11 @@ class Level(tools.State):
         
         if checkpoint:
             if checkpoint.type == c.CHECKPOINT_TYPE_ENEMY:
-                group = self.enemy_group_list[checkpoint.enemy_groupid]
+                index = checkpoint.enemy_groupid #% len(self.enemy_group_list)
+                print(index)
+                group = self.enemy_group_list[index]
+                print(group)
                 self.enemy_group.add(group)
-            elif checkpoint.type == c.CHECKPOINT_TYPE_FLAG:
-                self.player.state = c.FLAGPOLE
-                if self.player.rect.bottom < self.flag.rect.y:
-                    self.player.rect.bottom = self.flag.rect.y
-                self.flag.state = c.SLIDE_DOWN
-                self.update_flag_score()
-            elif checkpoint.type == c.CHECKPOINT_TYPE_CASTLE:
-                self.player.state = c.IN_CASTLE
-                self.player.x_vel = 0
-                self.castle_timer = self.current_time
-                self.flagpole_group.add(stuff.CastleFlag(8745, 322))
             elif (checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and
                     self.player.y_vel < 0):
                 mushroom_box = box.Box(checkpoint.rect.x, checkpoint.rect.bottom - 40,
@@ -304,14 +425,14 @@ class Level(tools.State):
                 self.player.y_vel = 7
                 self.player.rect.y = mushroom_box.rect.bottom
                 self.player.state = c.FALL
-            elif checkpoint.type == c.CHECKPOINT_TYPE_PIPE:
-                self.player.state = c.WALK_AUTO
+            # elif checkpoint.type == c.CHECKPOINT_TYPE_PIPE:
+            #     self.player.state = c.WALK_AUTO
             elif checkpoint.type == c.CHECKPOINT_TYPE_PIPE_UP:
                 self.change_map(checkpoint.map_index, checkpoint.type)
             elif checkpoint.type == c.CHECKPOINT_TYPE_MAP:
                 self.change_map(checkpoint.map_index, checkpoint.type)
-            elif checkpoint.type == c.CHECKPOINT_TYPE_BOSS:
-                self.player.state = c.WALK_AUTO
+            # elif checkpoint.type == c.CHECKPOINT_TYPE_BOSS:
+            #     self.player.state = c.WALK_AUTO
             checkpoint.kill()
 
     def update_flag_score(self):
@@ -332,8 +453,7 @@ class Level(tools.State):
         self.player.rect.x += round(self.player.x_vel)
         if self.player.rect.x < self.start_x:
             self.player.rect.x = self.start_x
-        elif self.player.rect.right > self.end_x:
-            self.player.rect.right = self.end_x
+
         self.check_player_x_collisions()
         
         if not self.player.dead:
@@ -525,12 +645,12 @@ class Level(tools.State):
         else:
             self.player.y_vel = 0
             self.player.rect.bottom = sprite.rect.top
-            if self.player.state == c.FLAGPOLE:
-                self.player.state = c.WALK_AUTO
-            elif self.player.state == c.END_OF_LEVEL_FALL:
-                self.player.state = c.WALK_AUTO
-            else:
-                self.player.state = c.WALK
+            # if self.player.state == c.FLAGPOLE:
+            #     self.player.state = c.WALK_AUTO
+            # elif self.player.state == c.END_OF_LEVEL_FALL:
+            #     self.player.state = c.WALK_AUTO
+            # else:
+            self.player.state = c.WALK
     
     def check_if_enemy_on_brick_box(self, brick):
         brick.rect.y -= 5
@@ -599,16 +719,15 @@ class Level(tools.State):
         elif self.player.dead:
             self.next = c.LOAD_SCREEN
         else:
-            self.game_info[c.LEVEL_NUM] += 1
-            self.next = c.LOAD_SCREEN
+            self.next = c.LEVEL
+            # self.game_info[c.LEVEL_NUM] += 1
+            # self.next = c.LOAD_SCREEN
 
     def update_viewport(self):
         third = self.viewport.x + self.viewport.w//3
         player_center = self.player.rect.centerx
         
-        if (self.player.x_vel > 0 and 
-            player_center >= third and
-            self.viewport.right < self.end_x):
+        if (self.player.x_vel > 0 and player_center >= third):
             self.viewport.x += round(self.player.x_vel)
         elif self.player.x_vel < 0 and self.viewport.x > self.start_x:
             self.viewport.x += round(self.player.x_vel)
@@ -625,7 +744,9 @@ class Level(tools.State):
         self.moving_score_list.append(stuff.Score(x, y, score))
 
     def draw(self, surface):
-        self.level.blit(self.background, self.viewport, self.viewport)
+        #self.level.blit(self.background, self.viewport, self.viewport)
+        self.level.fill((92,148,252))
+        self.ground_step_pipe_group.draw(self.level)
         self.powerup_group.draw(self.level)
         self.brick_group.draw(self.level)
         self.box_group.draw(self.level)
