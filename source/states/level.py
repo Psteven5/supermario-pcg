@@ -31,6 +31,27 @@ from .. import setup, tools
 from .. import constants as c
 from ..components import info, stuff, player, brick, box, enemy, powerup, coin
 
+from enum import Enum, auto
+from dataclasses import dataclass
+
+class EntityType(Enum):
+    PLAYER = auto()
+    GROUND = auto()
+    BRICK = auto()
+    BOX = auto()
+    ENEMY = auto()
+    POWERUP = auto()
+
+@dataclass
+class Entity():
+    x: int
+    y: int
+    w: int
+    h: int
+    dx: int
+    dy: int
+    ty: EntityType
+
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
     def __init__(self):
@@ -228,11 +249,82 @@ class Level(tools.State):
         self.ground_step_pipe_group = pg.sprite.Group(self.ground_group,
                         self.pipe_group, self.step_group, self.slider_group)
         self.player_group = pg.sprite.Group(self.player)
+
+    def get_relevant_from_group(self, group, entity_type):
+        stuffs = []
+        for stuff in group:
+            dx = stuff.rect.x - self.viewport.x
+            if dx < -30 or dx > 790:
+                continue
+            stuffs.append(Entity(
+                x=stuff.rect.centerx - self.player.rect.centerx,
+                y=stuff.rect.centery - self.player.rect.bottom,
+                w=stuff.rect.w,
+                h=stuff.rect.h,
+                dx=stuff.x_vel if hasattr(stuff, 'x_vel') else 0,
+                dy=stuff.y_vel if hasattr(stuff, 'y_vel') else 0,
+                ty=entity_type,
+            ))
+        return stuffs
         
+    def get_relevant_from_large_group(self, group, entity_type=EntityType.GROUND):
+        largers = []
+        for large in group:
+            dlx = large.rect.x - self.viewport.x
+            drx = large.rect.x + large.rect.w - self.viewport.x
+            if drx < -30 or dlx > 790:
+                continue
+            for x in range(large.rect.x, large.rect.x + large.rect.w, 43):
+                dx = x - self.viewport.x
+                if dx < -30:
+                    continue
+                if dx > 790:
+                    break
+                for y in range(large.rect.y, large.rect.y + large.rect.h, 43):
+                    largers.append(Entity(
+                        x=x + 21,
+                        y=y + 21,
+                        w=43,
+                        h=43,
+                        dx=0,
+                        dy=0,
+                        ty=entity_type,
+                    ))
+        return largers
+    
+    def get_ground(self):
+        return (self.get_relevant_from_large_group(self.ground_group) +
+                self.get_relevant_from_large_group(self.pipe_group) +
+                self.get_relevant_from_large_group(self.step_group))
+    
+    def get_enemies(self):
+        return (self.get_relevant_from_group(self.enemy_group, EntityType.ENEMY) +
+                self.get_relevant_from_group(self.shell_group, EntityType.ENEMY))
+    
+    def get_state(self):
+        state = [Entity(0, 0, self.player.rect.w, self.player.rect.h, self.player.x_vel, self.player.y_vel, EntityType.PLAYER)]
+        state += self.get_ground()
+        state += self.get_relevant_from_group(self.brick_group, EntityType.BRICK)
+        state += self.get_relevant_from_group(self.box_group, EntityType.BOX)
+        state += self.get_enemies()
+        state += self.get_relevant_from_group(self.powerup_group, EntityType.POWERUP)
+        return state
+
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         self.handle_states(keys)
+        print(self.get_state())
+        # print(f"sliders: {sliders}")
+        # print(f"bricks: {bricks}")
+        # print(f"boxes: {boxes}")
+        # print(f"grounds: {grounds}")
+        # b1 = brick.Brick(self.viewport.x + 790, self.player.rect.y, type=0)
+        # b2 = brick.Brick(self.viewport.x - 30, self.player.rect.y, type=0)
+        # self.brick_group.add(b1)
+        # self.brick_group.add(b2)
         self.draw(surface)
+        # self.brick_group.remove(b1)
+        # self.brick_group.remove(b2)
     
     def handle_states(self, keys):
         self.update_all_sprites(keys)
