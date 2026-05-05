@@ -75,6 +75,17 @@ class Powerup(stuff.Stuff):
             self.kill()
         elif self.rect.y > (level.viewport.bottom):
             self.kill()
+    
+    def change_direction(self, direction):
+        self.direction = direction
+        if self.direction == c.RIGHT:
+            self.x_vel = self.speed
+            if self.state == c.WALK or self.state == c.FLY:
+                self.frame_index = 4
+        else:
+            self.x_vel = self.speed * -1
+            if self.state == c.WALK or self.state == c.FLY:
+                self.frame_index = 0
 
     def check_x_collisions(self, level):
         """
@@ -97,6 +108,20 @@ class Powerup(stuff.Stuff):
             self.x_vel = self.speed if self.direction == c.RIGHT else -1 * self.speed
             if sprite.name == c.MAP_BRICK:
                 self.x_vel = 0
+        collider = pg.sprite.spritecollideany(self, pg.sprite.Group(level.powerup_group))
+        if collider and collider is not self:
+            if self.direction == c.RIGHT:
+                tmp = self.rect.right
+                self.rect.right = collider.rect.left
+                collider.rect.left = tmp
+                collider.change_direction(c.RIGHT)
+                self.change_direction(c.LEFT)
+            elif self.direction == c.LEFT:
+                tmp = self.rect.left
+                self.rect.left = collider.rect.right
+                collider.rect.right = tmp
+                collider.change_direction(c.LEFT)
+                self.change_direction(c.RIGHT)
 
     def check_y_collisions(self, level):
         """
@@ -106,11 +131,11 @@ class Powerup(stuff.Stuff):
             level (Level): The current level object.
         """
         sprite_group = pg.sprite.Group(
-            level.ground_step_pipe_group, level.brick_group, level.box_group
+            level.ground_step_pipe_group, level.brick_group, level.box_group, level.powerup_group
         )
 
         sprite = pg.sprite.spritecollideany(self, sprite_group)
-        if sprite:
+        if sprite and sprite is not self:
             self.y_vel = 0
             self.rect.bottom = sprite.rect.top
             self.state = c.SLIDE

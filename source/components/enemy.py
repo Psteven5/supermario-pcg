@@ -235,6 +235,23 @@ class Enemy(pg.sprite.Sprite):
                 elif self.direction == c.LEFT:
                     self.rect.left = collider.rect.right
                     self.change_direction(c.RIGHT)
+            if (self.state != c.SHELL_SLIDE and
+                self.state != c.DEATH_JUMP and
+                self.state != c.JUMPED_ON):
+                collider = pg.sprite.spritecollideany(self, pg.sprite.Group(level.enemy_group))
+                if collider and collider is not self:
+                    if self.direction == c.RIGHT:
+                        tmp = self.rect.right
+                        self.rect.right = collider.rect.left
+                        collider.rect.left = tmp
+                        collider.change_direction(c.RIGHT)
+                        self.change_direction(c.LEFT)
+                    elif self.direction == c.LEFT:
+                        tmp = self.rect.left
+                        self.rect.left = collider.rect.right
+                        collider.rect.right = tmp
+                        collider.change_direction(c.LEFT)
+                        self.change_direction(c.RIGHT)
 
         if self.state == c.SHELL_SLIDE:
             enemy = pg.sprite.spritecollideany(self, level.enemy_group)
@@ -262,9 +279,9 @@ class Enemy(pg.sprite.Sprite):
             sprite_group = level.ground_step_pipe_group
         else:
             sprite_group = pg.sprite.Group(level.ground_step_pipe_group,
-                            level.brick_group, level.box_group)
+                            level.brick_group, level.box_group, level.enemy_group, level.powerup_group)
         sprite = pg.sprite.spritecollideany(self, sprite_group)
-        if sprite and sprite.name != c.MAP_SLIDER:
+        if sprite and sprite is not self and sprite.name != c.MAP_SLIDER:
             if self.rect.top <= sprite.rect.top:
                 self.rect.bottom = sprite.rect.y
                 self.y_vel = 0

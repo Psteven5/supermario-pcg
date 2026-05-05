@@ -35,7 +35,7 @@ from enum import Enum, auto
 from dataclasses import dataclass
 
 class EntityType(Enum):
-    PLAYER = auto()
+    PLAYER = 0
     GROUND = auto()
     BRICK = auto()
     BOX = auto()
@@ -708,7 +708,8 @@ class Level(tools.State):
         player_center = self.player.rect.centerx
         
         if (self.player.state != c.SMALL_TO_BIG and
-            self.player.state != c.BIG_TO_FIRE):
+            self.player.state != c.BIG_TO_FIRE and
+            self.player.state != c.BIG_TO_SMALL):
             if (self.player.x_vel > 0 and 
                 player_center >= third and
                 self.viewport.right < self.end_x):
