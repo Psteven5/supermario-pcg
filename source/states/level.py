@@ -606,12 +606,14 @@ class Level(tools.State):
         third = self.viewport.x + self.viewport.w//3
         player_center = self.player.rect.centerx
         
-        if (self.player.x_vel > 0 and 
-            player_center >= third and
-            self.viewport.right < self.end_x):
-            self.viewport.x += round(self.player.x_vel)
-        elif self.player.x_vel < 0 and self.viewport.x > self.start_x:
-            self.viewport.x += round(self.player.x_vel)
+        if (self.player.state != c.SMALL_TO_BIG and
+            self.player.state != c.BIG_TO_FIRE):
+            if (self.player.x_vel > 0 and 
+                player_center >= third and
+                self.viewport.right < self.end_x):
+                self.viewport.x += round(self.player.x_vel)
+            elif self.player.x_vel < 0 and self.viewport.x > self.start_x:
+                self.viewport.x += round(self.player.x_vel)
     
     def move_to_dying_group(self, group, sprite):
         group.remove(sprite)
