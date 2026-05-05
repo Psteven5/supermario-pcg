@@ -29,6 +29,7 @@ import json
 import pygame as pg
 from .. import setup, tools
 from .. import constants as c
+from . import GenerateChunk
 from ..components import info, stuff, player, brick, box, enemy, powerup, coin
 
 # Define a class for the level state, which inherits from tools.State
@@ -70,7 +71,8 @@ class Level(tools.State):
 
     # Function to load the map data from a JSON file
     def load_map(self):
-        map_file = 'level_' + str(self.game_info[c.LEVEL_NUM]) + '.json'
+        # TODO: change this function and use it in load_next_chunk?
+        map_file = 'chunk.json'
         file_path = os.path.join('source', 'data', 'maps', map_file)
         f = open(file_path)
         self.map_data = json.load(f)
@@ -85,6 +87,8 @@ class Level(tools.State):
         # build next chunk when halfway current chunk
         if self.player.rect.x > self.chunk_size * self.current_chunk + self.chunk_size/2:
             self.current_chunk += 1
+            generator = GenerateChunk(self.chunk_size)
+            generator.generate_chunk()
             self.load_next_chunk()
            
             # extend level surface for next chunk
@@ -92,10 +96,14 @@ class Level(tools.State):
             new_width = self.chunk_size * (self.current_chunk + 1)
             self.level = pg.Surface((new_width, c.SCREEN_HEIGHT)).convert()
 
-    def load_next_chunk(self):
+    def load_next_chunk(self, ):
         # TODO: use load_map to change self.map_data to new level from generated new json file?
         offset_x = self.chunk_size * self.current_chunk
-        new_map_data = json.loads(json.dumps(self.base_data))
+        map_file = 'chunk.json'
+        file_path = os.path.join('source', 'data', 'maps', map_file)
+        f = open(file_path)
+        new_map_data = json.load(f)
+        f.close()
         for data in new_map_data:
             if isinstance(new_map_data[data], list):
                 for item in new_map_data[data]:
