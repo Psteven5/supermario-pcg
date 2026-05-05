@@ -75,6 +75,9 @@ class GenerateChunk():
                 gen_bricks = True
                 brick_height = random.randint(c.MIN_GEN_HEIGHT, c.MAX_GEN_HEIGHT)
 
+                # Whether to generate box with power-ups or coins
+                gen_box = True
+
                 # Random chance to place a pipe, stairs
                 if random.random() < 0.2 and self.current_x + c.PIPE_WIDTH < seg[1]: # Pipe
                     height_type_choice = random.randint(0,2)
@@ -90,10 +93,14 @@ class GenerateChunk():
                 if gen_bricks and random.random() < 0.5 and self.current_x + c.BRICKS_WIDTH * c.BRICK_SIZE < seg[1]:
                     self.generate_brick(brick_height, c.BRICKS_WIDTH)
                     self.current_x += c.BRICKS_WIDTH * c.BRICK_SIZE
+                    gen_box = False
+                
+                if gen_box and random.random() < 0.1 and self.current_x + c.BRICKS_WIDTH < seg[1]:
+                    self.generate_box(brick_height) #Misschien ook width toevoegen zodat het een rijtje is
+                    self.current_x += c.BRICKS_WIDTH #* c.BRICK_SIZE
 
                 self.current_x += random.randint(c.MIN_GEN_DISTANCE, c.MAX_GEN_DISTANCE)
 
-        self.generate_box()
         self.generate_enemy()
         self.generate_slider()
         self.generate_checkpoint()
@@ -142,18 +149,93 @@ class GenerateChunk():
         base_x = self.current_x
         for i in range(num_bricks):
             curr_x = base_x + i * c.BRICK_SIZE
-            self.chunk[c.MAP_BRICK].append({
+            # Make a random block in the bricks a box
+            if random.random() < 0.05:
+                self.chunk[c.MAP_BOX].append({
+                    "x": curr_x,
+                    "y": self.GROUND_Y - height,
+                    "type": random.randint(1,6) # Misschien niet alles erin doen
+                })
+            else:
+                self.chunk[c.MAP_BRICK].append({
                 "x": curr_x,
                 "y": self.GROUND_Y - height,
                 "type": 0
             })
 
 
-    def generate_box(self):
-        pass
+    def generate_box(self, height):
+        base_x = self.current_x
+        curr_x = base_x + c.BRICK_SIZE
+        self.chunk[c.MAP_BOX].append({
+            "x": curr_x,
+            "y": self.GROUND_Y - height,
+            "type": random.randint(1,6) # Misschien niet alles erin doen
+        })
 
     def generate_enemy(self):
-        pass
+        enemy_list = self.chunk[c.MAP_ENEMY]
+        checkpoint_list = self.chunk[c.MAP_CHECKPOINT]
+
+        group = []
+
+        # Generate enemies across all ground segments (one group total)
+        for seg in self.chunk[c.MAP_GROUND]:
+            start_x = seg["x"]
+            end_x = seg["x"] + seg["width"]
+
+            current_x = start_x + 150  # avoid edges
+
+            while current_x < end_x - 150:
+                if random.random() < 0.3:
+                    enemy_type = random.randint(0, 2)
+
+                    enemy = {
+                        "x": int(current_x),
+                        "y": int(self.GROUND_Y - 40),
+                        "direction": 0,
+                        "type": enemy_type,
+                        "color": random.randint(0, 2),
+                        "num": 1
+                    }
+
+                    # Optional movement behavior
+                    if enemy_type == 1:
+                        enemy["range"] = 1
+                        enemy["range_start"] = int(current_x - random.randint(100, 250))
+                        enemy["range_end"] = int(current_x + random.randint(100, 250))
+
+                    elif enemy_type == 2:
+                        enemy["range"] = 1
+                        enemy["range_start"] = int(self.GROUND_Y - random.randint(200, 400))
+                        enemy["range_end"] = int(self.GROUND_Y - random.randint(50, 150))
+                        enemy["is_vertical"] = 1
+
+                    group.append(enemy)
+
+                    # spacing between enemies
+                    current_x += random.randint(150, 250)
+
+                current_x += random.randint(80, 150)
+
+        # Only create group + checkpoint if we actually have enemies
+        if group:
+            # Add single group (index 0)
+            enemy_list.append({"0": group})
+
+            # Spawn enemies BEFORE player sees them
+            first_enemy_x = group[0]["x"]
+
+            checkpoint_x = max(0, first_enemy_x - 600)
+
+            checkpoint_list.append({
+                "x": checkpoint_x,
+                "y": 0,
+                "width": 10,
+                "height": 600,
+                "type": 0,
+                "enemy_groupid": 0
+            })
 
     def generate_slider(self):
         pass
