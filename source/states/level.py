@@ -274,22 +274,31 @@ class Level(tools.State):
             drx = large.rect.x + large.rect.w - self.viewport.x
             if drx < -30 or dlx > 790:
                 continue
-            for x in range(large.rect.x, large.rect.x + large.rect.w, 43):
-                dx = x - self.viewport.x
-                if dx < -30:
-                    continue
-                if dx > 790:
-                    break
-                for y in range(large.rect.y, large.rect.y + large.rect.h, 43):
-                    largers.append(Entity(
-                        x=x + 21,
-                        y=y + 21,
-                        w=43,
-                        h=43,
-                        dx=0,
-                        dy=0,
-                        ty=entity_type,
-                    ))
+            # for x in range(large.rect.x, large.rect.x + large.rect.w, 43):
+            #     dx = x - self.viewport.x
+            #     if dx < -30:
+            #         continue
+            #     if dx > 790:
+            #         break
+            #     for y in range(large.rect.y, large.rect.y + large.rect.h, 43):
+            #         largers.append(Entity(
+            #             x=x + 21,
+            #             y=y + 21,
+            #             w=43,
+            #             h=43,
+            #             dx=0,
+            #             dy=0,
+            #             ty=entity_type,
+            #         ))
+            largers.append(Entity(
+                x=large.rect.centerx - self.player.rect.centerx,
+                y=large.rect.centery - self.player.rect.bottom,
+                w=large.rect.w,
+                h=large.rect.h,
+                dx=large.x_vel if hasattr(large, 'x_vel') else 0,
+                dy=large.y_vel if hasattr(large, 'y_vel') else 0,
+                ty=entity_type,
+            ))
         return largers
     
     def get_ground(self):
