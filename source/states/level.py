@@ -86,12 +86,11 @@ class Level(tools.State):
         if self.player.rect.x > self.chunk_size * self.current_chunk + self.chunk_size/2:
             self.current_chunk += 1
             self.load_next_chunk()
-
-            # self.end_x = self.chunk_size * (self.current_chunk + 1)
-            # TODO? dynamic window switching?
-            # old_width = self.level.get_width()
-            # if self.end_x > old_width:
-            #     self.level = pg.Surface((self.end_x, c.SCREEN_HEIGHT)).convert()
+           
+            # extend level surface for next chunk
+            old_width = self.level.get_width()
+            new_width = self.chunk_size * (self.current_chunk + 1)
+            self.level = pg.Surface((new_width, c.SCREEN_HEIGHT)).convert()
 
     def load_next_chunk(self):
         # TODO: use load_map to change self.map_data to new level from generated new json file?
@@ -208,7 +207,7 @@ class Level(tools.State):
                                     int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)))
         self.bg_rect = self.background.get_rect()
 
-        self.level = pg.Surface((self.chunk_size * 5, c.SCREEN_HEIGHT)).convert() #TODO
+        self.level = pg.Surface((self.chunk_size, c.SCREEN_HEIGHT)).convert()
         self.viewport = setup.SCREEN.get_rect(bottom=self.bg_rect.bottom)
 
     # Function to set up the different maps for the level
@@ -218,9 +217,9 @@ class Level(tools.State):
             for data in self.map_data[c.MAP_MAPS]:
                 self.map_list.append((data['start_x'], data['end_x'], data['player_x'], data['player_y']))
             self.start_x, self.end_x, self.player_x, self.player_y = self.map_list[0]
-        else:
+        else: #TODO not used???
             self.start_x = 0
-            self.end_x = self.chunk_size * 5 #TODO
+            self.end_x = self.chunk_size
             self.player_x = 110
             self.player_y = c.GROUND_HEIGHT
     
@@ -356,7 +355,7 @@ class Level(tools.State):
         self.ground_step_pipe_group = pg.sprite.Group(self.ground_group,
                         self.pipe_group, self.step_group, self.slider_group)
         self.player_group = pg.sprite.Group(self.player)
-        
+
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         self.handle_states(keys)
