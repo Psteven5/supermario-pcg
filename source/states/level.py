@@ -311,6 +311,9 @@ class Level(tools.State):
                 self.get_relevant_from_group(self.shell_group, EntityType.ENEMY))
     
     def get_state(self):
+        state = [[None] * 20 for _ in range(15)]
+        state[(self.player.rect.bottom - self.viewport.y) // 43][(self.player.rect.centerx - self.viewport.x) // 43] = 'P'
+        return state
         state = [Entity(0, 0, self.player.rect.w, self.player.rect.h, self.player.x_vel, self.player.y_vel, EntityType.PLAYER)]
         state += self.get_ground()
         state += self.get_relevant_from_group(self.brick_group, EntityType.BRICK)
