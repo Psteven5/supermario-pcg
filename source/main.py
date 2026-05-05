@@ -39,7 +39,7 @@ def main():
         c.MAIN_MENU: main_menu.Menu(),
         c.LOAD_SCREEN: load_screen.LoadScreen(),
         # c.LEVEL: level.Level(),
-        c.LEVEL: rl_level.Level(),
+        c.LEVEL: level.Level(),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut()
     }

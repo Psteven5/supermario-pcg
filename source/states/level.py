@@ -330,6 +330,8 @@ class Level(tools.State):
         for entity in entities:
             entity_y = (entity.y + (self.player.rect.bottom - grid_y)) // 43
             entity_x = (entity.x + (self.player.rect.centerx - grid_x)) // 43
+            if entity_y < 0 or entity_y >= 15 or entity_x < 0 or entity_x >= 20:
+                continue
             state[entity_y][entity_x] = entity.ty.name
 
         return state
