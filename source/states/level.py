@@ -312,8 +312,10 @@ class Level(tools.State):
                 self.get_relevant_from_group(self.shell_group, EntityType.ENEMY))
 
     def get_state(self):
+        # 20x15 grid
         state = [[None] * 20 for _ in range(15)]
 
+        # make sure grid aligns with the entities
         grid_x = (self.viewport.x // 43 * 43)
         grid_y = (self.viewport.y // 43 * 43)
 
@@ -324,6 +326,7 @@ class Level(tools.State):
         entities += self.get_enemies()
         entities += self.get_relevant_from_group(self.powerup_group, EntityType.POWERUP)
 
+        # put the entities into the state grid
         for entity in entities:
             entity_y = (entity.y + (self.player.rect.bottom - grid_y)) // 43
             entity_x = (entity.x + (self.player.rect.centerx - grid_x)) // 43
