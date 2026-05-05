@@ -32,6 +32,8 @@ from .. import constants as c
 from . import generate_chunk
 from ..components import info, stuff, player, brick, box, enemy, powerup, coin
 
+CHUNK_SIZE = 5000
+
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
     def __init__(self):
@@ -52,7 +54,7 @@ class Level(tools.State):
         self.overhead_info = info.Info(self.game_info, c.LEVEL)
         
         # Load map data and set up background
-        self.chunk_size = 5000
+        self.chunk_size = CHUNK_SIZE
         generator = generate_chunk.GenerateChunk(self.chunk_size)
         generator.generate_chunk(first=True)
         self.load_map()
@@ -84,13 +86,13 @@ class Level(tools.State):
         # Keep track of the base chunk to add this later for infinite level
         self.base_data = self.map_data.copy()
         self.current_chunk = 0
-        self.chunk_size = 5000
+        self.chunk_size = CHUNK_SIZE
 
     def check_for_chunk(self):
         # build next chunk when halfway current chunk
         if self.player.rect.x > self.chunk_size * self.current_chunk + self.chunk_size/2:
             self.current_chunk += 1
-            self.chunk_size = 5000
+            self.chunk_size = CHUNK_SIZE
             generator = generate_chunk.GenerateChunk(self.chunk_size)
             generator.generate_chunk()
             self.load_next_chunk()
