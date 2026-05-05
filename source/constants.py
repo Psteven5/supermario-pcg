@@ -214,3 +214,19 @@ EXPLODING = 'exploding'
 #IMAGE SHEET
 ENEMY_SHEET = 'smb_enemies_sheet'
 ITEM_SHEET = 'item_objects'
+
+# Constants for generate_chunk.py
+MIN_FLOOR_DISTANCE = 200
+MAX_FLOOR_DISTANCE = 1000
+MIN_GEN_DISTANCE = 100
+MAX_GEN_DISTANCE = 200
+MIN_GEN_HEIGHT = 200  # for bricks
+MAX_GEN_HEIGHT = 250
+START_GEN_OFFSET = 400 # offset of generation wrt the player starting position
+
+GAP_DISTANCE = 200
+PIPE_WIDTH = 83
+STAIR_SIZE = 43
+STAIR_STEPS = 4
+BRICKS_WIDTH = 4
+BRICK_SIZE = 43

@@ -54,7 +54,7 @@ class Level(tools.State):
         # Load map data and set up background
         self.chunk_size = 5000
         generator = generate_chunk.GenerateChunk(self.chunk_size)
-        generator.generate_chunk()
+        generator.generate_chunk(first=True)
         self.load_map()
         self.setup_background()
         self.setup_maps()
