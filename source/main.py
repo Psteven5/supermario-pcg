@@ -34,12 +34,14 @@ def main():
     # Create an instance of the Control class from the 'tools' module
     game = tools.Control()
 
+    rl = True
+
     # Create a dictionary mapping state names to their respective state instances
     state_dict = {
         c.MAIN_MENU: main_menu.Menu(),
-        c.LOAD_SCREEN: load_screen.LoadScreen(),
+        c.LOAD_SCREEN: load_screen.LoadScreen(rl),
         # c.LEVEL: level.Level(),
-        c.LEVEL: level.Level(),
+        c.LEVEL: level.Level(rl),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut()
     }

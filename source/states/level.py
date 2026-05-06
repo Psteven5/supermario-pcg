@@ -55,9 +55,12 @@ class Entity():
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self):
+    def __init__(self, rl: bool = False):
         tools.State.__init__(self)
         self.player = None
+
+        self.death_timeout = 0 if rl else 3000
+        self.live_change_on_death = 0 if rl else 1
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
@@ -340,9 +343,9 @@ class Level(tools.State):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         self.handle_states(keys)
         state = self.get_state()
-        print("#####################")
-        for row in state:
-            print(row)
+        # print("#####################")
+        # for row in state:
+        #     print(row)
         # print(state)
         # print(f"sliders: {sliders}")
         # print(f"bricks: {bricks}")
@@ -362,7 +365,7 @@ class Level(tools.State):
     def update_all_sprites(self, keys):
         if self.player.dead:
             self.player.update(keys, self.game_info, self.powerup_group)
-            if self.current_time - self.death_timer > 3000:
+            if self.current_time - self.death_timer > self.death_timeout:
                 self.update_game_info()
                 self.done = True
         elif self.player.state == c.IN_CASTLE:
@@ -712,7 +715,7 @@ class Level(tools.State):
 
     def update_game_info(self):
         if self.player.dead:
-            self.persist[c.LIVES] -= 1
+            self.persist[c.LIVES] -= self.live_change_on_death
 
         if self.persist[c.LIVES] == 0:
             self.next = c.GAME_OVER
