@@ -175,7 +175,6 @@ class GenerateChunk():
 
     def generate_enemy(self):
         enemy_list = self.chunk[c.MAP_ENEMY]
-        checkpoint_list = self.chunk[c.MAP_CHECKPOINT]
 
         group = []
 
@@ -218,14 +217,34 @@ class GenerateChunk():
 
                 current_x += random.randint(80, 150)
 
-        # Only create group + checkpoint if we actually have enemies
+        # Only save group if enemies exist
         if group:
-            # Add single group (index 0)
             enemy_list.append({"0": group})
 
-            # Spawn enemies BEFORE player sees them
-            first_enemy_x = group[0]["x"]
+    def generate_slider(self):
+        pass
 
+    def generate_checkpoint(self):
+        checkpoint_list = self.chunk[c.MAP_CHECKPOINT]
+        enemy_list = self.chunk[c.MAP_ENEMY]
+        # Add checkpoints for enemies
+        for index, group_data in enumerate(enemy_list):
+
+            group_key = str(index)
+
+            # Safety check
+            if group_key not in group_data:
+                continue
+
+            enemies = group_data[group_key]
+
+            # Skip empty groups
+            if not enemies:
+                continue
+
+            first_enemy_x = enemies[0]["x"]
+
+            # Spawn before player sees enemies
             checkpoint_x = max(0, first_enemy_x - 600)
 
             checkpoint_list.append({
@@ -234,14 +253,8 @@ class GenerateChunk():
                 "width": 10,
                 "height": 600,
                 "type": 0,
-                "enemy_groupid": 0
+                "enemy_groupid": index
             })
-
-    def generate_slider(self):
-        pass
-
-    def generate_checkpoint(self):
-        pass
         
     def save_chunk(self):
         map_file = 'chunk.json'
