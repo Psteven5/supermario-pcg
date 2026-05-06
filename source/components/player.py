@@ -154,22 +154,21 @@ class Player(pg.sprite.Sprite):
         self.left_frames = self.small_normal_frames[1]
 
     def update(self, keys, game_info, fire_group):
-        # self.keys = keys
         self.current_time = game_info[c.CURRENT_TIME]
-        self.handle_state(fire_group)
+        self.handle_state(keys, fire_group)
         self.check_if_hurt_invincible()
         self.check_if_invincible()
         self.animation()
 
-    def handle_state(self, fire_group):
+    def handle_state(self, keys, fire_group):
         if self.state == c.STAND:
-            self.standing(fire_group)
+            self.standing(keys, fire_group)
         elif self.state == c.WALK:
-            self.walking(fire_group)
+            self.walking(keys, fire_group)
         elif self.state == c.JUMP:
-            self.jumping(fire_group)
+            self.jumping(keys, fire_group)
         elif self.state == c.FALL:
-            self.falling(fire_group)
+            self.falling(keys, fire_group)
         elif self.state == c.DEATH_JUMP:
             self.jumping_to_death()
         elif self.state == c.FLAGPOLE:
@@ -195,43 +194,43 @@ class Player(pg.sprite.Sprite):
             if self.rect.bottom < self.up_pipe_y:
                 self.state = c.STAND
 
-    def check_to_allow_jump(self):
-        if not self.keys[tools.keybinding['jump']]:
+    def check_to_allow_jump(self, keys):
+        if not keys[tools.keybinding['jump']]:
             self.allow_jump = True
     
-    def check_to_allow_fireball(self):
-        if not self.keys[tools.keybinding['action']]:
+    def check_to_allow_fireball(self, keys):
+        if not keys[tools.keybinding['action']]:
             self.allow_fireball = True
 
-    def standing(self, fire_group):
-        self.check_to_allow_jump()
-        self.check_to_allow_fireball()
+    def standing(self, keys, fire_group):
+        self.check_to_allow_jump(keys)
+        self.check_to_allow_fireball(keys)
         
         self.frame_index = 0
         self.x_vel = 0
         self.y_vel = 0
         
-        if self.keys[tools.keybinding['action']]:
+        if keys[tools.keybinding['action']]:
             if self.fire and self.allow_fireball:
                 self.shoot_fireball(fire_group)
 
-        if self.keys[tools.keybinding['down']]:
+        if keys[tools.keybinding['down']]:
             self.update_crouch_or_not(True)
 
-        if self.keys[tools.keybinding['left']]:
+        if keys[tools.keybinding['left']]:
             self.facing_right = False
             self.update_crouch_or_not()
             self.state = c.WALK
-        elif self.keys[tools.keybinding['right']]:
+        elif keys[tools.keybinding['right']]:
             self.facing_right = True
             self.update_crouch_or_not()
             self.state = c.WALK
-        elif self.keys[tools.keybinding['jump']]:
+        elif keys[tools.keybinding['jump']]:
             if self.allow_jump:
                 self.state = c.JUMP
                 self.y_vel = self.jump_vel
         
-        if not self.keys[tools.keybinding['down']]:
+        if not keys[tools.keybinding['down']]:
             self.update_crouch_or_not()
 
     def update_crouch_or_not(self, isDown=False):
@@ -254,9 +253,9 @@ class Player(pg.sprite.Sprite):
         self.rect.x = left
         self.frame_index = frame_index
 
-    def walking(self, fire_group):
-        self.check_to_allow_jump()
-        self.check_to_allow_fireball()
+    def walking(self, keys, fire_group):
+        self.check_to_allow_jump(keys)
+        self.check_to_allow_fireball(keys)
 
         if self.frame_index == 0:
             self.frame_index += 1
@@ -269,7 +268,7 @@ class Player(pg.sprite.Sprite):
                 self.frame_index = 1
             self.walking_timer = self.current_time
         
-        if self.keys[tools.keybinding['action']]:
+        if keys[tools.keybinding['action']]:
             self.max_x_vel = self.max_run_vel
             self.x_accel = self.run_accel
             if self.fire and self.allow_fireball:
@@ -278,7 +277,7 @@ class Player(pg.sprite.Sprite):
             self.max_x_vel = self.max_walk_vel
             self.x_accel = self.walk_accel
         
-        if self.keys[tools.keybinding['jump']]:
+        if keys[tools.keybinding['jump']]:
             if self.allow_jump:
                 self.state = c.JUMP
                 if abs(self.x_vel) > 4:
@@ -287,14 +286,14 @@ class Player(pg.sprite.Sprite):
                     self.y_vel = self.jump_vel
                 
 
-        if self.keys[tools.keybinding['left']]:
+        if keys[tools.keybinding['left']]:
             self.facing_right = False
             if self.x_vel > 0:
                 self.frame_index = 5
                 self.x_accel = c.SMALL_TURNAROUND
             
             self.x_vel = self.cal_vel(self.x_vel, self.max_x_vel, self.x_accel, True)
-        elif self.keys[tools.keybinding['right']]:
+        elif keys[tools.keybinding['right']]:
             self.facing_right = True
             if self.x_vel < 0:
                 self.frame_index = 5
@@ -315,9 +314,9 @@ class Player(pg.sprite.Sprite):
                     self.x_vel = 0
                     self.state = c.STAND
 
-    def jumping(self, fire_group):
+    def jumping(self, keys, fire_group):
         """ y_vel value: positive is down, negative is up """
-        self.check_to_allow_fireball()
+        self.check_to_allow_fireball(keys)
         
         self.allow_jump = False
         self.frame_index = 4
@@ -328,29 +327,29 @@ class Player(pg.sprite.Sprite):
             self.gravity = c.GRAVITY
             self.state = c.FALL
 
-        if self.keys[tools.keybinding['right']]:
+        if keys[tools.keybinding['right']]:
             self.x_vel = self.cal_vel(self.x_vel, self.max_x_vel, self.x_accel)
-        elif self.keys[tools.keybinding['left']]:
+        elif keys[tools.keybinding['left']]:
             self.x_vel = self.cal_vel(self.x_vel, self.max_x_vel, self.x_accel, True)
         
-        if not self.keys[tools.keybinding['jump']]:
+        if not keys[tools.keybinding['jump']]:
             self.gravity = c.GRAVITY
             self.state = c.FALL
         
-        if self.keys[tools.keybinding['action']]:
+        if keys[tools.keybinding['action']]:
             if self.fire and self.allow_fireball:
                 self.shoot_fireball(fire_group)
 
-    def falling(self, fire_group):
-        self.check_to_allow_fireball()
+    def falling(self, keys, fire_group):
+        self.check_to_allow_fireball(keys)
         self.y_vel = self.cal_vel(self.y_vel, self.max_y_vel, self.gravity)
         
-        if self.keys[tools.keybinding['right']]:
+        if keys[tools.keybinding['right']]:
             self.x_vel = self.cal_vel(self.x_vel, self.max_x_vel, self.x_accel)
-        elif self.keys[tools.keybinding['left']]:
+        elif keys[tools.keybinding['left']]:
             self.x_vel = self.cal_vel(self.x_vel, self.max_x_vel, self.x_accel, True)
         
-        if self.keys[tools.keybinding['action']]:
+        if keys[tools.keybinding['action']]:
             if self.fire and self.allow_fireball:
                 self.shoot_fireball(fire_group)
     
