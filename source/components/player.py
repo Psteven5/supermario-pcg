@@ -154,7 +154,7 @@ class Player(pg.sprite.Sprite):
         self.left_frames = self.small_normal_frames[1]
 
     def update(self, keys, game_info, fire_group):
-        self.keys = keys
+        # self.keys = keys
         self.current_time = game_info[c.CURRENT_TIME]
         self.handle_state(fire_group)
         self.check_if_hurt_invincible()
