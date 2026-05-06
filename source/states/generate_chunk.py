@@ -24,7 +24,7 @@ class GenerateChunk():
         # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
         if len(chances) >= 5:
             # Filtering in case a value is not inbetween 0.0 and 1.0
-            filter_chances = [c for c in chances if c >= 0.0 and c <= 1.0 else 0.0]
+            filter_chances = [c if 0.0 <= c <= 1.0 else 0.0 for c in chances]
 
             self.gaps_chance = filter_chances[0]
             self.pipestairs_chance = filter_chances[1]
