@@ -35,6 +35,29 @@ from enum import Enum, auto
 from dataclasses import dataclass
 from pprint import pprint
 
+# RL agent import
+# import gymnasium as gym
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.distributions import Categorical
+import pygame as pg
+
+from .helper import evaluate
+
+class MacroMove(Enum):
+    LEFT = 0
+    RIGHT = auto()
+    ACTION = auto()
+    JUMP = auto()
+    LEFT_ACTION = auto()
+    RIGHT_ACTION = auto()
+    LEFT_JUMP = auto()
+    RIGHT_JUMP = auto()
+    LEFT_ACTION_JUMP = auto()
+    RIGHT_ACTION_JUMP = auto()
+
 class EntityType(Enum):
     PLAYER = 0
     GROUND = auto()
@@ -59,11 +82,164 @@ class Level(tools.State):
         tools.State.__init__(self)
         self.player = None
 
-        self.death_timeout = 0 if rl else 3000
-        self.live_change_on_death = 0 if rl else 1
+    
+    # RL agent ====================================================================
+    class env:
+        def __init__(self):
+            # make env
+
+            # start game
+            print("Main started")
+            main()
+            print("main done")
+            pg.quit()
+            # turn level on
+
+            # init all self vars
+            self.state = []
+            self.action_space = []
+
+            self.keys = {}
+
+
+        def reset(self, seed=42):
+            # reset env
+
+            # get begin state
+            # update self.state
+
+            return self.state
+
+        def observation_space(self):
+            # get amount of different values (determines the network architecture)
+
+            return obseraction_space
+        
+        def action_space(self):
+            # return action space size
+
+            return action_space_size
+        
+        def random_action(self):
+            # return random chosen action
+            return action
+
+        def step(self, action):
+            # perform action in environment, update environent and return: next_state, reward, terminated, truncated and
+            self.action = action
+            next_state = something
+            # update self.state
+            self.state = next_state
+
+            return next_state, reward, terminated, truncated
+        
+        def close(self):
+            # close environent (close pygame etc.)
+            return
+        
+        def getkeys(self):
+            # give new key dict
+
+            self.action
+            action = "jump"
+            self.keys[tools.keybinding[action]] = True
+            return self.keys
+
+
+    class CartPoleEnv:
+        def __init__(self, render=False, seed=42):
+            self.render_mode = "human" if render else None
+            # self.env = gym.make("CartPole-v1", render_mode=self.render_mode)
+            self.env = env()
+            # self.state, _ = self.env.reset(seed=seed)
+            self.state = self.env.reset(seed=seed)
+
+            # self.state_size = self.env.observation_space.shape[0]
+            self.state_size = self.env.observation_space()
+            # self.action_size = self.env.action_space.n
+            self.action_size = self.env.action_space()
+            # self.env.action_space.seed(seed)
+
+        def reset(self):
+            # self.state, _ = self.env.reset()
+            self.state = self.env.reset()
+            return self.state
+
+        def step(self, action):
+            # next_state, reward, terminated, truncated, _ = self.env.step(action)
+            next_state, reward, terminated, truncated = self.env.step(action)
+            done = terminated or truncated
+            return next_state, reward, done
+
+        def sample_action(self):
+            # return self.env.action_space.sample()
+            return self.env.random_action()
+
+        def close(self):
+            self.env.close()
+
+
+    class π_θ(nn.Module):
+        def __init__(self, state_size, action_size, network_size):
+            super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(state_size, network_size),
+                nn.ReLU(),
+                nn.Linear(network_size, network_size),
+                nn.ReLU(),
+                nn.Linear(network_size, action_size),
+                nn.Softmax(dim=-1),
+            )
+
+        def forward(self, x):
+            return self.net(x)
+
+
+    class V_network(nn.Module):
+        def __init__(self, state_size, action_size, network_size):
+            super().__init__()
+            self.net = nn.Sequential(
+                nn.Linear(state_size, network_size),
+                nn.ReLU(),
+                nn.Linear(network_size, network_size),
+                nn.ReLU(),
+                nn.Linear(network_size, action_size),
+            )
+
+        def forward(self, x):
+            return self.net(x).squeeze(-1)
+
+    @staticmethod
+    def PPO_clipped_train(gamma, learning_rate, max_steps, network_size, epsilon, epochs):
+        # placeholder ppo
+                
+
+        env.close()
+        return returns, step_list
+
+
+    # if __name__ == "__main__":
+    #     # run example
+    #     gamma = 1.0
+    #     learning_rate = 1e-3
+    #     max_steps = 2001
+    #     network_size = 64
+    #     res = []
+    #     epsilon = 0.2
+    #     epochs = 10
+    #     for _ in range(5):
+    #         results, _ = PPO_clipped_train(gamma, learning_rate, max_steps, network_size, epsilon, epochs)
+    #         res.append(results)
+    #     mean_return = np.mean(np.array(res),axis=0)
+    #     print(f"The mean return per eval over 5 repetitions: {mean_return}")
+
+
+    # end of RL agent ====================================================================
+
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
+        
         # Initialize game information
         self.game_info = persist
         self.persist = self.game_info
@@ -341,11 +517,88 @@ class Level(tools.State):
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        self.handle_states(keys)
-        state = self.get_state()
-        # print("#####################")
+        
+        # init easy_keys
+        easy_keys = {}
+        easy_keys[tools.keybinding['left']] = False
+        easy_keys[tools.keybinding['right']] = False
+        easy_keys[tools.keybinding['jump']] = False
+        easy_keys[tools.keybinding['down']] = False
+        easy_keys[tools.keybinding['action']] = False
+
+        # easy_keys = self.env.getkeys(self) # do func to give new keys
+        print(keys)
+        chosen_action = MacroMove.RIGHT_JUMP
+        match chosen_action:
+            case MacroMove.LEFT:
+                easy_keys[tools.keybinding['left']] = True
+                
+            case MacroMove.RIGHT:
+                easy_keys[tools.keybinding['right']] = True
+                
+            case MacroMove.ACTION:
+                easy_keys[tools.keybinding['action']] = True
+                
+            case MacroMove.JUMP:
+                easy_keys[tools.keybinding['jump']] = True
+                
+            case MacroMove.LEFT_ACTION:
+                easy_keys[tools.keybinding['left']] = True
+                easy_keys[tools.keybinding['action']] = True
+                
+            case MacroMove.RIGHT_ACTION:
+                easy_keys[tools.keybinding['right']] = True
+                easy_keys[tools.keybinding['action']] = True
+                
+            case MacroMove.LEFT_JUMP:
+                easy_keys[tools.keybinding['left']] = True
+                easy_keys[tools.keybinding['jump']] = True
+                
+            case MacroMove.RIGHT_JUMP:
+                easy_keys[tools.keybinding['right']] = True
+                easy_keys[tools.keybinding['jump']] = True
+                
+            case MacroMove.LEFT_ACTION_JUMP:
+                easy_keys[tools.keybinding['left']] = True
+                easy_keys[tools.keybinding['action']] = True
+                easy_keys[tools.keybinding['jump']] = True
+                
+            case MacroMove.RIGHT_ACTION_JUMP:
+                easy_keys[tools.keybinding['right']] = True
+                easy_keys[tools.keybinding['action']] = True
+                easy_keys[tools.keybinding['jump']] = True
+                
+            case _:
+                print("Invalid macro action")
+                exit(1)
+        
+        keepplayermoves = False
+        
+        if keepplayermoves: # override rl input keys
+            easy_keys[tools.keybinding['left']] = True if keys[tools.keybinding['left']] else False
+            easy_keys[tools.keybinding['right']] = True if keys[tools.keybinding['right']] else False
+            easy_keys[tools.keybinding['jump']] = True if keys[tools.keybinding['jump']] else False
+            easy_keys[tools.keybinding['down']] = True if keys[tools.keybinding['down']] else False
+            easy_keys[tools.keybinding['action']] = True if keys[tools.keybinding['action']] else False
+        
+        # right, left < action < jump
+        # left, right, left action, right action, left action jump, right action jump, left jump, right jump, jump, action
+        
+
+
+        
+        
+
+        # # make mario go right always
+        # easy_keys[tools.keybinding['right']] = True
+
+        # self.handle_states(keys) # do move and update state
+        self.handle_states(easy_keys) # do move and update state
+        state = self.get_state() # get RL state
+        print("#####################")
         # for row in state:
         #     print(row)
+
         # print(state)
         # print(f"sliders: {sliders}")
         # print(f"bricks: {bricks}")
@@ -355,7 +608,7 @@ class Level(tools.State):
         # b2 = brick.Brick(self.viewport.x - 30, self.player.rect.y, type=0)
         # self.brick_group.add(b1)
         # self.brick_group.add(b2)
-        self.draw(surface)
+        self.draw(surface) # update frame
         # self.brick_group.remove(b1)
         # self.brick_group.remove(b2)
 
