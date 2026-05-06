@@ -65,7 +65,6 @@ class GenerateChunk():
                     ground_segments.append([new_start_x, new_start_x])
         
         # Then generate other objects, such as pipes, staircases, bricks
-        # TODO: add enemies, boxes, sliders etc
         for seg in ground_segments:
             self.current_x = seg[0] + 100   # +100 to prevent overlap 
 
@@ -78,16 +77,18 @@ class GenerateChunk():
                 # Whether to generate box with power-ups or coins
                 gen_box = True
 
-                # Random chance to place a pipe, stairs
-                if random.random() < 0.2 and self.current_x + c.PIPE_WIDTH < seg[1]: # Pipe
-                    height_type_choice = random.randint(0,2)
-                    brick_height += self.generate_pipe(height_type_choice)
+                # Random chance to place a pipe or stairs
+                if random.random() < 0.5:
+                    # 50/50 chance for either pipe or stairs
+                    if random.random() < 0.5 and self.current_x + c.PIPE_WIDTH < seg[1]: # Pipe
+                        height_type_choice = random.randint(0,2)
+                        brick_height += self.generate_pipe(height_type_choice)
 
-                elif random.random() < 0.3 and self.current_x + c.STAIR_SIZE * c.STAIR_STEPS < seg[1]: # Stairs
-                    direction_choice = random.randint(0,1)
-                    self.generate_step(c.STAIR_STEPS, direction_choice)
-                    self.current_x += c.STAIR_STEPS * c.STAIR_SIZE
-                    gen_bricks = False # no bricks above stairs
+                    elif self.current_x + c.STAIR_SIZE * c.STAIR_STEPS < seg[1]: # Stairs
+                        direction_choice = random.randint(0,1)
+                        self.generate_step(c.STAIR_STEPS, direction_choice)
+                        self.current_x += c.STAIR_STEPS * c.STAIR_SIZE
+                        gen_bricks = False # no bricks above stairs
                 
                 # Random chance to place bricks
                 if gen_bricks and random.random() < 0.5 and self.current_x + c.BRICKS_WIDTH * c.BRICK_SIZE < seg[1]:
@@ -95,6 +96,7 @@ class GenerateChunk():
                     self.current_x += c.BRICKS_WIDTH * c.BRICK_SIZE
                     gen_box = False
                 
+                # Random chance to place boxes with powerups
                 if gen_box and random.random() < 0.1 and self.current_x + c.BRICKS_WIDTH < seg[1]:
                     self.generate_box(brick_height) #Misschien ook width toevoegen zodat het een rijtje is
                     self.current_x += c.BRICKS_WIDTH #* c.BRICK_SIZE
