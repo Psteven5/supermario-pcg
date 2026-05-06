@@ -30,9 +30,7 @@ import pygame as pg
 from .. import setup, tools
 from .. import constants as c
 from . import generate_chunk
-from ..components import info, stuff, player, brick, box, enemy, powerup, coin, ground
-
-CHUNK_SIZE = 5000
+from ..components import info, stuff, player, brick, box, enemy, powerup, coin, ground, step
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
@@ -54,7 +52,7 @@ class Level(tools.State):
         self.overhead_info = info.Info(self.game_info, c.LEVEL)
         
         # Load map data and set up background
-        self.chunk_size = CHUNK_SIZE
+        self.chunk_size = c.CHUNK_SIZE
         generator = generate_chunk.GenerateChunk(self.chunk_size)
         generator.generate_chunk(first=True)
         self.load_map()
@@ -86,13 +84,13 @@ class Level(tools.State):
         # Keep track of the base chunk to add this later for infinite level
         self.base_data = self.map_data.copy()
         self.current_chunk = 0
-        self.chunk_size = CHUNK_SIZE
+        self.chunk_size = c.CHUNK_SIZE
 
     def check_for_chunk(self):
         # build next chunk when halfway current chunk
         if self.player.rect.x > self.chunk_size * self.current_chunk + self.chunk_size/2:
             self.current_chunk += 1
-            self.chunk_size = CHUNK_SIZE
+            self.chunk_size = c.CHUNK_SIZE
             generator = generate_chunk.GenerateChunk(self.chunk_size)
             generator.generate_chunk()
             self.load_next_chunk()
@@ -194,9 +192,11 @@ class Level(tools.State):
         if c.MAP_STEP in map_data:
             for item in map_data[c.MAP_STEP]:
                 collider = stuff.Collider(item['x'], item['y'], item['width'], item['height'], c.MAP_STEP)
-                collider.image = pg.Surface((collider.rect.width, collider.rect.height))
-                collider.image.fill((200, 150, 100)) # Brown steps
+                collider.image = pg.Surface((collider.rect.width, collider.rect.height))   
                 self.step_group.add(collider)
+                for y in range(item['y'], item['y'] + item['height'], 43):
+                    for x in range(item['x'], item['x'] + item['width'], 43):
+                        self.step_group.add(step.Step(x, y)) 
 
         if c.MAP_SLIDER in map_data:
             for item in map_data[c.MAP_SLIDER]:
@@ -265,12 +265,13 @@ class Level(tools.State):
                 group.add(collider)
                 # green = ground, brown = steps
                 if name == c.MAP_GROUND:
-                    #collider.image.fill((100, 200, 100)) # Green ground
                     for y in range(data['y'], data['y'] + data['height'], 43):
                         for x in range(data['x'], data['x'] + data['width'], 43):
                             group.add(ground.Ground(x,y))
                 else:
-                    collider.image.fill((200, 150, 100)) # Brown steps
+                    for y in range(data['y'], data['y'] + data['height'], 43):
+                        for x in range(data['x'], data['x'] + data['width'], 43):
+                            group.add(step.Step(x,y))
         return group
 
     # Function to set up pipe objects on the map
