@@ -219,15 +219,17 @@ ENEMY_SHEET = 'smb_enemies_sheet'
 ITEM_SHEET = 'item_objects'
 
 # Constants for generate_chunk.py
-MIN_FLOOR_DISTANCE = 200
-MAX_FLOOR_DISTANCE = 1000
+FLOOR_BRICK_SIZE = 43
+MIN_FLOOR_DISTANCE = 5  # Minimum number of bricks for floor
+MAX_FLOOR_DISTANCE = 20 # Maximum number of bricks for floor
+
 MIN_GEN_DISTANCE = 100
 MAX_GEN_DISTANCE = 200
 MIN_GEN_HEIGHT = 200  # for bricks
 MAX_GEN_HEIGHT = 250
-START_GEN_OFFSET = 400 # offset of generation wrt the player starting position
+START_GEN_OFFSET = 9*FLOOR_BRICK_SIZE # offset of generation wrt the player starting position
 
-GAP_DISTANCE = 200
+GAP_DISTANCE = 5*FLOOR_BRICK_SIZE
 PIPE_WIDTH = 83
 STAIR_SIZE = 43
 STAIR_STEPS = 4

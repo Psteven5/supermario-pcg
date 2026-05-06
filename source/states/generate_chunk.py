@@ -57,6 +57,7 @@ class GenerateChunk():
         """Generate the level."""
         self.current_x = 0
         target_width = self.chunk_size
+        segment_length_choices = [s*c.FLOOR_BRICK_SIZE for s in range(c.MIN_FLOOR_DISTANCE, c.MAX_FLOOR_DISTANCE+1)]
         ground_segments = [[0,0]]
 
         # If first chunk (starting position), generate only ground only first
@@ -66,7 +67,7 @@ class GenerateChunk():
 
         # First generate the ground
         while self.current_x < target_width:
-            segment_length = random.randint(c.MIN_FLOOR_DISTANCE, c.MAX_FLOOR_DISTANCE)
+            segment_length = random.choice(segment_length_choices)
             if segment_length > target_width - self.current_x:
                 segment_length = target_width - self.current_x
                 ground_segments[-1][1] += segment_length
@@ -121,7 +122,7 @@ class GenerateChunk():
                     self.generate_box(brick_height) #Misschien ook width toevoegen zodat het een rijtje is
                     self.current_x += c.BRICKS_WIDTH #* c.BRICK_SIZE
 
-                self.current_x += random.randint(c.MIN_GEN_DISTANCE, c.MAX_GEN_DISTANCE)
+                self.current_x += random.choice(segment_length_choices)
 
         self.generate_enemy()
         self.generate_slider()
