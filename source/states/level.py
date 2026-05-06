@@ -30,7 +30,7 @@ import pygame as pg
 from .. import setup, tools
 from .. import constants as c
 from . import generate_chunk
-from ..components import info, stuff, player, brick, box, enemy, powerup, coin
+from ..components import info, stuff, player, brick, box, enemy, powerup, coin, ground
 
 CHUNK_SIZE = 5000
 
@@ -134,8 +134,11 @@ class Level(tools.State):
             for item in map_data[c.MAP_GROUND]:
                 collider = stuff.Collider(item['x'], item['y'], item['width'], item['height'], c.MAP_GROUND)
                 collider.image = pg.Surface((collider.rect.width, collider.rect.height))
-                collider.image.fill((100, 200, 100)) # Green ground
+                collider.image.fill((0, 0, 0))
                 self.ground_group.add(collider)
+                for y in range(item['y'], item['y'] + item['height'], 43):
+                    for x in range(item['x'], item['x'] + item['width'], 43):
+                        self.ground_group.add(ground.Ground(x, y))              
         
         if c.MAP_PIPE in map_data:
             for item in map_data[c.MAP_PIPE]:
@@ -258,12 +261,16 @@ class Level(tools.State):
             for data in self.map_data[name]:
                 collider = stuff.Collider(data['x'], data['y'], data['width'], data['height'], name)
                 collider.image = pg.Surface((collider.rect.width, collider.rect.height))
+                collider.image.fill((0, 0, 0))
+                group.add(collider)
                 # green = ground, brown = steps
                 if name == c.MAP_GROUND:
-                    collider.image.fill((100, 200, 100)) # Green ground
+                    #collider.image.fill((100, 200, 100)) # Green ground
+                    for y in range(data['y'], data['y'] + data['height'], 43):
+                        for x in range(data['x'], data['x'] + data['width'], 43):
+                            group.add(ground.Ground(x,y))
                 else:
                     collider.image.fill((200, 150, 100)) # Brown steps
-                group.add(collider)
         return group
 
     # Function to set up pipe objects on the map
@@ -759,6 +766,7 @@ class Level(tools.State):
     def draw(self, surface):
         #self.level.blit(self.background, self.viewport, self.viewport)
         self.level.fill((92,148,252))
+        self.ground_group.draw(self.level)
         self.ground_step_pipe_group.draw(self.level)
         self.powerup_group.draw(self.level)
         self.brick_group.draw(self.level)

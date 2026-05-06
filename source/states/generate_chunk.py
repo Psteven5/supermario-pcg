@@ -188,15 +188,15 @@ class GenerateChunk():
             current_x = start_x + 150  # avoid edges
 
             while current_x < end_x - 150:
-                if random.random() < 0.3:
-                    enemy_type = random.randint(0, 2)
+                if random.random() < 0.9:
+                    enemy_type = 2#random.randint(0, 2)
 
                     enemy = {
                         "x": int(current_x),
                         "y": int(self.GROUND_Y - 40),
                         "direction": 0,
                         "type": enemy_type,
-                        "color": random.randint(0, 2),
+                        "color": 0,
                         "num": 1
                     }
 
@@ -247,8 +247,8 @@ class GenerateChunk():
             first_enemy_x = enemies[0]["x"]
 
             # Spawn before player sees enemies
-            checkpoint_x = max(0, first_enemy_x - 600)
-
+            checkpoint_x = max(0, first_enemy_x - 1000)
+            print(checkpoint_x)
             checkpoint_list.append({
                 "x": checkpoint_x,
                 "y": 0,
