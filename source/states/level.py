@@ -766,7 +766,14 @@ class Level(tools.State):
 
     def draw(self, surface):
         #self.level.blit(self.background, self.viewport, self.viewport)
-        self.level.fill((92,148,252))
+        # Repeat the background image infinitely
+        bg_width = self.background.get_width()
+
+        # Start drawing one tile before the viewport to avoid seams
+        start_x = -(self.viewport.x % bg_width)
+
+        for x in range(start_x, self.level.get_width(), bg_width):
+            self.level.blit(self.background, (x, 0))
         self.ground_group.draw(self.level)
         self.ground_step_pipe_group.draw(self.level)
         self.powerup_group.draw(self.level)
