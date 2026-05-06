@@ -14,10 +14,30 @@ from .. import constants as c
 
 
 class GenerateChunk():
-    def __init__(self, chunk_size):
+    def __init__(self, chunk_size, chances=[]):
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
+
+        # Chances for different level components (between 0.0 and 1.0)
+        # given an array chances:
+        # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
+        if len(chances) >= 5:
+            # Filtering in case a value is not inbetween 0.0 and 1.0
+            filter_chances = [c for c in chances if c >= 0.0 and c <= 1.0 else 0.0]
+
+            self.gaps_chance = filter_chances[0]
+            self.pipestairs_chance = filter_chances[1]
+            self.bricks_chance = filter_chances[2]
+            self.box_chance = filter_chances[3]
+            self.enemies_chance = filter_chances[4]
+        else:
+            # Default values
+            self.gaps_chance = 0.3
+            self.pipestairs_chance = 0.5
+            self.bricks_chance = 0.5
+            self.box_chance = 0.1
+            self.enemies_chance = 0.3
 
         self.chunk = {
             c.MAP_IMAGE: "level_1",
@@ -59,7 +79,7 @@ class GenerateChunk():
 
             # Random chance to place a gap
             if self.current_x < target_width - c.GAP_DISTANCE:
-                if random.random() < 0.3:                    
+                if random.random() < self.gaps_chance:                    
                     self.current_x += c.GAP_DISTANCE
                     new_start_x = ground_segments[-1][1] + c.GAP_DISTANCE
                     ground_segments.append([new_start_x, new_start_x])
@@ -78,7 +98,7 @@ class GenerateChunk():
                 gen_box = True
 
                 # Random chance to place a pipe or stairs
-                if random.random() < 0.5:
+                if random.random() < self.pipestairs_chance:
                     # 50/50 chance for either pipe or stairs
                     if random.random() < 0.5 and self.current_x + c.PIPE_WIDTH < seg[1]: # Pipe
                         height_type_choice = random.randint(0,2)
@@ -91,13 +111,13 @@ class GenerateChunk():
                         gen_bricks = False # no bricks above stairs
                 
                 # Random chance to place bricks
-                if gen_bricks and random.random() < 0.5 and self.current_x + c.BRICKS_WIDTH * c.BRICK_SIZE < seg[1]:
+                if gen_bricks and random.random() < self.bricks_chance and self.current_x + c.BRICKS_WIDTH * c.BRICK_SIZE < seg[1]:
                     self.generate_brick(brick_height, c.BRICKS_WIDTH)
                     self.current_x += c.BRICKS_WIDTH * c.BRICK_SIZE
                     gen_box = False
                 
                 # Random chance to place boxes with powerups
-                if gen_box and random.random() < 0.1 and self.current_x + c.BRICKS_WIDTH < seg[1]:
+                if gen_box and random.random() < self.box_chance and self.current_x + c.BRICKS_WIDTH < seg[1]:
                     self.generate_box(brick_height) #Misschien ook width toevoegen zodat het een rijtje is
                     self.current_x += c.BRICKS_WIDTH #* c.BRICK_SIZE
 
@@ -156,7 +176,7 @@ class GenerateChunk():
                 self.chunk[c.MAP_BOX].append({
                     "x": curr_x,
                     "y": self.GROUND_Y - height,
-                    "type": random.randint(1,6) # Misschien niet alles erin doen
+                    "type": random.randint(1,6) #TODO: Misschien niet alles erin doen
                 })
             else:
                 self.chunk[c.MAP_BRICK].append({
@@ -172,7 +192,7 @@ class GenerateChunk():
         self.chunk[c.MAP_BOX].append({
             "x": curr_x,
             "y": self.GROUND_Y - height,
-            "type": random.randint(1,6) # Misschien niet alles erin doen
+            "type": random.randint(1,6) #TODO: Misschien niet alles erin doen
         })
 
     def generate_enemy(self):
@@ -188,8 +208,8 @@ class GenerateChunk():
             current_x = start_x + 150  # avoid edges
 
             while current_x < end_x - 150:
-                if random.random() < 0.9:
-                    enemy_type = 2#random.randint(0, 2)
+                if random.random() < self.enemies_chance:
+                    enemy_type = random.randint(0, 2)
 
                     enemy = {
                         "x": int(current_x),
