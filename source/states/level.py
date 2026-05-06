@@ -316,8 +316,8 @@ class Level(tools.State):
         state = [[None] * 20 for _ in range(15)]
 
         # make sure grid aligns with the entities
-        grid_x = (self.viewport.x // 43 * 43)
-        grid_y = (self.viewport.y // 43 * 43)
+        grid_x = ((self.viewport.x + 7) // 43 * 43)
+        grid_y = ((self.viewport.y) // 43 * 43)
 
         entities = [Entity(0, 0, self.player.rect.w, self.player.rect.h, self.player.x_vel, self.player.y_vel, EntityType.PLAYER)]
         entities += self.get_ground()
