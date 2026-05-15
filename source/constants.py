@@ -24,6 +24,7 @@ SOFTWARE.
 # Our constants
 
 CHUNK_SIZE = 4988
+SHIFT_THRESHOLD = CHUNK_SIZE
 
 __author__ = 'm0rniac'
 

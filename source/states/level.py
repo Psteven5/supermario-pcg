@@ -37,6 +37,8 @@ class Level(tools.State):
     def __init__(self):
         tools.State.__init__(self)
         self.player = None
+        self.shift_threshold = c.SHIFT_THRESHOLD
+        self.reset = True
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
@@ -88,21 +90,20 @@ class Level(tools.State):
 
     def check_for_chunk(self):
         # build next chunk when halfway current chunk
-        if self.player.rect.x > self.chunk_size * self.current_chunk + self.chunk_size/2:
+        if self.player.rect.x > self.chunk_size/2 and self.reset: 
+            self.reset = False
             self.current_chunk += 1
             self.chunk_size = c.CHUNK_SIZE
             generator = generate_chunk.GenerateChunk(self.chunk_size)
             generator.generate_chunk()
             self.load_next_chunk()
-           
-            # extend level surface for next chunk
-            old_width = self.level.get_width()
-            new_width = self.chunk_size * (self.current_chunk + 1)
-            self.level = pg.Surface((new_width, c.SCREEN_HEIGHT)).convert()
+        if self.player.rect.x > self.shift_threshold:
+            self.reset = True
+            self.reset_map(self.chunk_size)
 
     def load_next_chunk(self, ):
         # TODO: use load_map to change self.map_data to new level from generated new json file?
-        offset_x = self.chunk_size * self.current_chunk
+        offset_x = self.chunk_size
         map_file = 'chunk.json'
         file_path = os.path.join('source', 'data', 'maps', map_file)
         f = open(file_path)
@@ -213,6 +214,32 @@ class Level(tools.State):
             self.step_group,
             self.slider_group
         )
+    def delete_old_sprites(self):
+        limit = self.viewport.x - c.SCREEN_WIDTH
+
+        for group in [self.ground_group, self.step_group, self.pipe_group, self.slider_group,
+                    self.static_coin_group, self.brick_group, self.box_group, self.enemy_group, self.shell_group,
+                    self.powerup_group, self.coin_group, self.brickpiece_group,
+                    self.checkpoint_group, self.flagpole_group, self.dying_group]:
+            for sprite in group:
+                if sprite.rect.right < limit:
+                    sprite.kill()
+    def reset_map(self, offset):        
+        # Shift player
+        self.player.rect.x -= offset
+
+        # Shift viewpoint
+        self.viewport.x -= offset
+
+        # shift all sprites
+        for group in [self.ground_group, self.step_group, self.pipe_group, self.slider_group,
+                    self.static_coin_group, self.brick_group, self.box_group, self.enemy_group, self.shell_group,
+                    self.powerup_group, self.coin_group, self.brickpiece_group,
+                    self.checkpoint_group, self.flagpole_group, self.dying_group]:
+            for sprite in group:
+                sprite.rect.x -= offset
+       
+
 
     # Function to set up the level background
     def setup_background(self):
@@ -224,7 +251,7 @@ class Level(tools.State):
                                     int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)))
         self.bg_rect = self.background.get_rect()
 
-        self.level = pg.Surface((self.chunk_size, c.SCREEN_HEIGHT)).convert()
+        self.level = pg.Surface((self.chunk_size*2, c.SCREEN_HEIGHT)).convert()
         self.viewport = setup.SCREEN.get_rect(bottom=self.bg_rect.bottom)
 
     # Function to set up the different maps for the level
@@ -380,6 +407,7 @@ class Level(tools.State):
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+        print(self.player.rect.x)
         self.handle_states(keys)
         self.draw(surface)
     
@@ -420,6 +448,7 @@ class Level(tools.State):
             self.coin_group.update(self.game_info)
             self.brickpiece_group.update()
             self.dying_group.update(self.game_info, self)
+            self.delete_old_sprites()
             self.update_player_position()
             self.check_for_player_death()
             self.update_viewport()
@@ -433,9 +462,9 @@ class Level(tools.State):
         if checkpoint:
             if checkpoint.type == c.CHECKPOINT_TYPE_ENEMY:
                 index = checkpoint.enemy_groupid #% len(self.enemy_group_list)
-                print(index)
+                print("index: ", index)
                 group = self.enemy_group_list[index]
-                print(group)
+                print("group: ", group)
                 self.enemy_group.add(group)
             elif (checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and
                     self.player.y_vel < 0):
