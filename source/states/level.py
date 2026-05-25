@@ -48,6 +48,7 @@ class Level(tools.State):
         self.game_info[c.CURRENT_TIME] = current_time
         self.death_timer = 0
         self.castle_timer = 0
+        self.left_bound = 0
         
         # Initialize lists and overhead information
         self.moving_score_list = []
@@ -256,6 +257,8 @@ class Level(tools.State):
 
         # Update background offset
         self.bg_offset = (self.bg_offset + offset) % self.background.get_width()
+
+        self.left_bound -= offset
 
         # shift all sprites
         for group in [self.ground_group, self.step_group, self.pipe_group, self.slider_group,
@@ -531,8 +534,8 @@ class Level(tools.State):
             return
 
         self.player.rect.x += round(self.player.x_vel)
-        if self.player.rect.x < self.start_x:
-            self.player.rect.x = self.start_x
+        if self.player.rect.x < self.left_bound:
+            self.player.rect.x = self.left_bound
 
         self.check_player_x_collisions()
         
@@ -809,8 +812,11 @@ class Level(tools.State):
         
         if (self.player.x_vel > 0 and player_center >= third):
             self.viewport.x += round(self.player.x_vel)
-        elif self.player.x_vel < 0 and self.viewport.x > self.start_x:
+        elif self.player.x_vel < 0 and self.viewport.x > self.left_bound:
             self.viewport.x += round(self.player.x_vel)
+        
+        self.left_bound = max(self.left_bound, self.viewport.x - 100)
+
     
     def move_to_dying_group(self, group, sprite):
         group.remove(sprite)
