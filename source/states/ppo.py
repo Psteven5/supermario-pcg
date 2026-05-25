@@ -13,10 +13,10 @@ class Env(gym.Env):
         super().__init__()
 
         self.observation_space = spaces.Box(
-            low=-1000,
-            high=1000,
+            low=-1.0,
+            high=1.0,
             shape=(num_features * num_frames, height, width),
-            dtype=np.int16,
+            dtype=np.float32,
         )
 
         self.action_space = spaces.Discrete(num_actions)
@@ -57,13 +57,13 @@ class MarioEncoder(BaseFeaturesExtractor):
             nn.Conv2d(in_features, 32, kernel_size=3, padding=1),
             nn.ReLU(),
 
-            MarioResidualBlock(64),
-            MarioResidualBlock(64),
+            MarioResidualBlock(32),
+            MarioResidualBlock(32),
 
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
 
-            nn.Linear(64, features_dim),
+            nn.Linear(32, features_dim),
             nn.ReLU(),
         )
 
@@ -75,13 +75,16 @@ class MarioPPO(nn.Module):
     def __init__(self, features_dim=128, num_actions=10):
         super().__init__()
 
+        self.latent_dim_pi = features_dim
+        self.latent_dim_vf = features_dim
+
         self.policy_net = nn.Sequential(
-            nn.Linear(features_dim, num_actions),
+            nn.Linear(features_dim, self.latent_dim_pi),
             nn.ReLU(),
         )
 
         self.value_net = nn.Sequential(
-            nn.Linear(features_dim, 1),
+            nn.Linear(features_dim, self.latent_dim_vf),
             nn.ReLU(),
         )
 
