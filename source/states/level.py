@@ -115,7 +115,9 @@ class Level(tools.State):
             chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk))
             chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk))
 
-            generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
+            difficulty = int(1 + self.current_chunk / 2)
+            print(difficulty)
+            generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
             generator.generate_chunk()
             self.load_next_chunk()
         if self.viewport.x > self.shift_threshold:

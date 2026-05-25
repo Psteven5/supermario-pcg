@@ -14,7 +14,7 @@ from .. import constants as c
 
 
 class GenerateChunk():
-    def __init__(self, chunk_size, difficulty = 1, chances=[]):
+    def __init__(self, chunk_size, chances=[], difficulty=1):
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
@@ -130,7 +130,7 @@ class GenerateChunk():
 
                 self.current_x += random.choice(segment_length_choices)
 
-        self.generate_enemy(first)
+        self.generate_enemy()
         self.generate_slider()
         self.generate_checkpoint()
         self.save_chunk()
@@ -220,7 +220,7 @@ class GenerateChunk():
     def generate_enemy(self):
         enemy_list = self.chunk[c.MAP_ENEMY]
         safe_start_x = c.SCREEN_WIDTH + 100
-        enemy_types = min(2, 2)
+        enemy_types = min(self.difficulty, 2)
         # 0 Goomba, 1 Koopa, 2 Koopa flying, 3 piranha plant, 4 firestick, 5 bowser
         # Generate enemies across all ground segments.
         for seg in self.chunk[c.MAP_GROUND]:
