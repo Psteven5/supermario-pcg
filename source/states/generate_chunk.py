@@ -14,11 +14,11 @@ from .. import constants as c
 
 
 class GenerateChunk():
-    def __init__(self, chunk_size,chances=[]):
+    def __init__(self, chunk_size, difficulty = 1, chances=[]):
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
-        self.difficulty = 3
+        self.difficulty = difficulty
 
         # Chances for different level components (between 0.0 and 1.0)
         # given an array chances:
@@ -40,7 +40,7 @@ class GenerateChunk():
             self.bricks_chance = 0.5
             self.box_chance = 0.1
             self.enemies_chance = 0.3
-            self.piranha_pipe = 1.0
+            self.piranha_pipe = 0.3
 
         self.chunk = {
             c.MAP_IMAGE: "level_1",
@@ -150,48 +150,30 @@ class GenerateChunk():
         # height_type 0: small, 1: medium, 2: large
         heights = [84, 126, 170]
         h = heights[height_type]
-        # Chance of having a piranha in the pipe
+        pipe_top = self.GROUND_Y - h
+        # Chance of having a piranha in the pipe. Keep it out of the first
+        # visible area so its checkpoint is not behind the player.
         if random.random() < self.piranha_pipe:
-            print("piranha in pipe")
             enemy = {
                         "x": self.current_x + 25,
-                        "y": self.GROUND_Y - h + 80,
+                        "y": pipe_top + 80,
                         "direction": 0,
                         "type": 3,
                         "color": 0,
                         "range" : 1,
-                        "range_start":self.GROUND_Y - h - 130 + 80, 
-                        "range_end":self.GROUND_Y - h + 80,
+                        "range_start": pipe_top - 60,
+                        "range_end": pipe_top + 80,
                     }
             group_index = len(self.chunk[c.MAP_ENEMY])
             self.chunk[c.MAP_ENEMY].append({str(group_index): [enemy]})
         self.chunk[c.MAP_PIPE].append({
             "x": self.current_x,
-            "y": self.GROUND_Y - h,
-            "width": 83,
+            "y": pipe_top,
+            "width": 82,
             "height": h,
             "type": 0
         })
-        
         return h
-    
-        #     {"7":[
-        #     {"x":4440, "y":490, "direction":0, "type":3, "color":0, "range":1, "range_start":360, "range_end":490},
-        #     {"x":4696, "y":445, "direction":0, "type":3, "color":0, "range":1, "range_start":315, "range_end":445},
-        #     {"x":4954, "y":535, "direction":0, "type":3, "color":0, "range":1, "range_start":400, "range_end":535}
-        # ]},
-
-        #     "pipe":[
-        # {"x":4415, "y":410, "width": 82, "height":130, "type":0},
-        # {"x":4672, "y":367, "width": 82, "height":170, "type":0},
-        # {"x":4929, "y":453, "width": 82, "height": 86, "type":0},
-        
-        # {"x":7114, "y":325, "width":104, "height": 86, "type":2},
-        # {"x":7632, "y":410, "width": 82, "height":130, "type":1},
-        # {"x":7802, "y":410, "width":104, "height":130, "type":1},
-        # {"x":7974, "y":410, "width":104, "height":130, "type":1},
-        # {"x":8360, "y":453, "width": 82, "height": 86, "type":0},
-        # {"x":10500, "y":453, "width":104, "height": 86, "type":2}
 
     def generate_step(self, steps, direction=0):
         """Generates a staircase of blocks. 0 is up, 1 is down."""
@@ -235,10 +217,10 @@ class GenerateChunk():
             "type": random.randint(1,6) #TODO: Misschien niet alles erin doen
         })
 
-    def generate_enemy(self, first=False):
+    def generate_enemy(self):
         enemy_list = self.chunk[c.MAP_ENEMY]
         safe_start_x = c.SCREEN_WIDTH + 100
-        enemy_types = min(self.difficulty * 0,75, 2)
+        enemy_types = min(2, 2)
         # 0 Goomba, 1 Koopa, 2 Koopa flying, 3 piranha plant, 4 firestick, 5 bowser
         # Generate enemies across all ground segments.
         for seg in self.chunk[c.MAP_GROUND]:

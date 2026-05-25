@@ -493,22 +493,19 @@ class Piranha(Enemy):
             self.animate_timer = self.current_time
 
     def update_position(self, level):
-        if self.check_player_is_on(level):
-            pass
-        else:
-            if self.rect.y < self.range_start:
-                self.rect.y = self.range_start
-                self.y_vel = 1
-            elif self.rect.bottom > self.range_end:
-                if self.wait_timer == 0:
-                    self.wait_timer = self.current_time
-                elif (self.current_time - self.wait_timer) < 3000:
-                    return
-                else:
-                    self.wait_timer = 0
-                    self.rect.bottom = self.range_end
-                    self.y_vel = -1
-            self.rect.y += self.y_vel
+        if self.rect.y < self.range_start:
+            self.rect.y = self.range_start
+            self.y_vel = 1
+        elif self.rect.bottom > self.range_end:
+            if self.wait_timer == 0:
+                self.wait_timer = self.current_time
+            elif (self.current_time - self.wait_timer) < 3000:
+                return
+            else:
+                self.wait_timer = 0
+                self.rect.bottom = self.range_end
+                self.y_vel = -1
+        self.rect.y += self.y_vel
 
     def check_player_is_on(self, level):
         result = False
