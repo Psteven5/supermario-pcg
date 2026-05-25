@@ -14,10 +14,11 @@ from .. import constants as c
 
 
 class GenerateChunk():
-    def __init__(self, chunk_size, chances=[]):
+    def __init__(self, chunk_size, difficulty,chances=[]):
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
+        self.difficulty = difficulty
 
         # Chances for different level components (between 0.0 and 1.0)
         # given an array chances:
@@ -124,7 +125,7 @@ class GenerateChunk():
 
                 self.current_x += random.choice(segment_length_choices)
 
-        self.generate_enemy()
+        self.generate_enemy(first)
         self.generate_slider()
         self.generate_checkpoint()
         self.save_chunk()
@@ -196,17 +197,16 @@ class GenerateChunk():
             "type": random.randint(1,6) #TODO: Misschien niet alles erin doen
         })
 
-    def generate_enemy(self):
+    def generate_enemy(self, first=False):
         enemy_list = self.chunk[c.MAP_ENEMY]
+        safe_start_x = c.SCREEN_WIDTH + 100
 
-        group = []
-
-        # Generate enemies across all ground segments (one group total)
+        # Generate enemies across all ground segments.
         for seg in self.chunk[c.MAP_GROUND]:
             start_x = seg["x"]
             end_x = seg["x"] + seg["width"]
 
-            current_x = start_x + 150  # avoid edges
+            current_x = max(start_x + 150, safe_start_x)  # avoid edges and the first visible area of each chunk
 
             while current_x < end_x - 150:
                 if random.random() < self.enemies_chance:
@@ -233,16 +233,13 @@ class GenerateChunk():
                         enemy["range_end"] = int(self.GROUND_Y - random.randint(50, 150))
                         enemy["is_vertical"] = 1
 
-                    group.append(enemy)
+                    group_index = len(enemy_list)
+                    enemy_list.append({str(group_index): [enemy]})
 
                     # spacing between enemies
                     current_x += random.randint(150, 250)
 
                 current_x += random.randint(80, 150)
-
-        # Only save group if enemies exist
-        if group:
-            enemy_list.append({"0": group})
 
     def generate_slider(self):
         pass
@@ -267,9 +264,8 @@ class GenerateChunk():
 
             first_enemy_x = enemies[0]["x"]
 
-            # Spawn before player sees enemies
-            checkpoint_x = max(0, first_enemy_x - 1000)
-            print(checkpoint_x)
+            # Spawn before the enemy enters the visible screen.
+            checkpoint_x = max(0, first_enemy_x - c.SCREEN_WIDTH + 100)
             checkpoint_list.append({
                 "x": checkpoint_x,
                 "y": 0,
