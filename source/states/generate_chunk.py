@@ -82,10 +82,11 @@ class GenerateChunk():
             ground_segments[-1][1] += segment_length
 
             # Random chance to place a gap
-            if self.current_x < target_width - c.GAP_DISTANCE:
+            if self.current_x < target_width - c.MAX_GAP_DISTANCE:
                 if random.random() < self.gaps_chance:                    
-                    self.current_x += c.GAP_DISTANCE
-                    new_start_x = ground_segments[-1][1] + c.GAP_DISTANCE
+                    gap_distance_choice = random.randint(c.MIN_GAP_BRICKS, c.MAX_GAP_BRICKS)
+                    self.current_x += gap_distance_choice * c.BRICK_SIZE
+                    new_start_x = ground_segments[-1][1] + gap_distance_choice*c.BRICK_SIZE
                     ground_segments.append([new_start_x, new_start_x])
         
         # Then generate other objects, such as pipes, staircases, bricks
@@ -108,22 +109,24 @@ class GenerateChunk():
                         height_type_choice = random.randint(0,2)
                         brick_height += self.generate_pipe(height_type_choice)
 
-                    elif self.current_x + c.STAIR_SIZE * c.STAIR_STEPS < seg[1]: # Stairs
+                    elif self.current_x + c.STAIR_SIZE * c.STAIR_STEPS_MAX < seg[1]: # Stairs
                         direction_choice = random.randint(0,1)
-                        self.generate_step(c.STAIR_STEPS, direction_choice)
-                        self.current_x += c.STAIR_STEPS * c.STAIR_SIZE
+                        steps_choice = random.randint(c.STAIR_STEPS_MIN, c.STAIR_STEPS_MAX)
+                        self.generate_step(steps_choice, direction_choice)
+                        self.current_x += steps_choice * c.STAIR_SIZE
                         gen_bricks = False # no bricks above stairs
                 
                 # Random chance to place bricks
-                if gen_bricks and random.random() < self.bricks_chance and self.current_x + c.BRICKS_WIDTH * c.BRICK_SIZE < seg[1]:
-                    self.generate_brick(brick_height, c.BRICKS_WIDTH)
-                    self.current_x += c.BRICKS_WIDTH * c.BRICK_SIZE
+                if gen_bricks and random.random() < self.bricks_chance and self.current_x + c.BRICKS_WIDTH_MAX * c.BRICK_SIZE < seg[1]:
+                    bricks_width_choice = random.randint(c.BRICKS_WIDTH_MIN, c.BRICKS_WIDTH_MAX)
+                    self.generate_brick(brick_height, bricks_width_choice)
+                    self.current_x += bricks_width_choice * c.BRICK_SIZE
                     gen_box = False
                 
                 # Random chance to place boxes with powerups
-                if gen_box and random.random() < self.box_chance and self.current_x + c.BRICKS_WIDTH < seg[1]:
+                if gen_box and random.random() < self.box_chance and self.current_x + c.BRICK_SIZE < seg[1]:
                     self.generate_box(brick_height) #Misschien ook width toevoegen zodat het een rijtje is
-                    self.current_x += c.BRICKS_WIDTH #* c.BRICK_SIZE
+                    self.current_x += c.BRICK_SIZE
 
                 self.current_x += random.choice(segment_length_choices)
 
@@ -245,7 +248,14 @@ class GenerateChunk():
             current_x = max(start_x + 150, safe_start_x)  # avoid edges and the first visible area of each chunk
 
             while current_x < end_x - 150:
-                if random.random() < self.enemies_chance:
+                
+                close_to_steps = False # To check whether we are close to stairs (we do not spawn enemies here)
+                for step in self.chunk[c.MAP_STEP]:
+                    if abs(current_x - step['x']) < 200:
+                        close_to_steps = True
+                        break
+
+                if random.random() < self.enemies_chance and not close_to_steps:
                     enemy_type = random.randint(0, enemy_types)
                     enemy = {
                         "x": int(current_x),

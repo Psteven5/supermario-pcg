@@ -226,15 +226,20 @@ MAX_FLOOR_DISTANCE = 20 # Maximum number of bricks for floor
 
 MIN_GEN_DISTANCE = 100
 MAX_GEN_DISTANCE = 200
-MIN_GEN_HEIGHT = 200  # for bricks
-MAX_GEN_HEIGHT = 250
+MIN_GEN_HEIGHT = 150  # for bricks
+MAX_GEN_HEIGHT = 200
 START_GEN_OFFSET = 9*FLOOR_BRICK_SIZE # offset of generation wrt the player starting position
 
-GAP_DISTANCE = 5*FLOOR_BRICK_SIZE
+MIN_GAP_DISTANCE = 4*FLOOR_BRICK_SIZE
+MAX_GAP_DISTANCE = 7*FLOOR_BRICK_SIZE
+MIN_GAP_BRICKS = 4  # how many bricks there would fit in a gap
+MAX_GAP_BRICKS = 7
 PIPE_WIDTH = 83
 STAIR_SIZE = 43
-STAIR_STEPS = 4
-BRICKS_WIDTH = 4
+STAIR_STEPS_MIN = 3
+STAIR_STEPS_MAX = 4
+BRICKS_WIDTH_MIN = 3
+BRICKS_WIDTH_MAX = 6
 BRICK_SIZE = 43
 
 # Constants for starting chances per chunk
