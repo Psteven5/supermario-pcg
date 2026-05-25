@@ -55,7 +55,13 @@ class Level(tools.State):
         
         # Load map data and set up background
         self.chunk_size = c.CHUNK_SIZE
-        generator = generate_chunk.GenerateChunk(self.chunk_size)
+        chunk_chances = [c.CHANCE_GAP,
+                         c.CHANCE_PIPESTAIRS,
+                         c.CHANCE_BRICKS,
+                         c.CHANCE_BOXES,
+                         c.CHANCE_ENEMIES,
+                         c.CHANCE_PIRANHA]
+        generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
         generator.generate_chunk(first=True)
         self.load_map()
         self.setup_background()
@@ -94,12 +100,29 @@ class Level(tools.State):
             self.reset = False
             self.current_chunk += 1
             self.chunk_size = c.CHUNK_SIZE
-            generator = generate_chunk.GenerateChunk(self.chunk_size)
+
+            # Chances for different level components (between 0.0 and 1.0)
+            # given an array chances:
+            # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies, 5 - piranha in pipe
+            chunk_chances = []
+            k = 0.5 # how quickly we increase the chances
+
+            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk))
+            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk))
+            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk))
+            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk))
+            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk))
+            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk))
+
+            generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
             generator.generate_chunk()
             self.load_next_chunk()
         if self.viewport.x > self.shift_threshold:
             self.reset = True
             self.reset_map(self.chunk_size)
+
+    def generate_chunk_chance(self, end, start, scaler, chunk_num):
+        return end - (end - start) * c.EULER_NUM**(-scaler * chunk_num)
 
     def load_next_chunk(self, ):
         # TODO: use load_map to change self.map_data to new level from generated new json file?
@@ -241,6 +264,10 @@ class Level(tools.State):
                     self.checkpoint_group, self.flagpole_group, self.dying_group]:
             for sprite in group:
                 sprite.rect.x -= offset       
+        
+        for group in self.enemy_group_list:
+            for sprite in group:
+                sprite.rect.x -= offset
 
 
     # Function to set up the level background
