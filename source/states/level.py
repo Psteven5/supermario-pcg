@@ -22,29 +22,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__author__ = 'm0rniac'
+__author__ = "m0rniac"
 
-import os
 import json
-import pygame as pg
-from .. import setup, tools
-from .. import constants as c
-from ..components import info, stuff, player, brick, box, enemy, powerup, coin
-
-from enum import Enum, auto
+import os
 from dataclasses import dataclass
+from enum import Enum, auto
 from pprint import pprint
 
 # RL agent import
 # import gymnasium as gym
 import numpy as np
+import pygame as pg
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
-import pygame as pg
 
+from .. import constants as c
+from .. import setup, tools
+from ..components import box, brick, coin, enemy, info, player, powerup, stuff
 from .helper import evaluate
+
 
 class MacroMove(Enum):
     LEFT = 0
@@ -58,6 +57,7 @@ class MacroMove(Enum):
     LEFT_ACTION_JUMP = auto()
     RIGHT_ACTION_JUMP = auto()
 
+
 class EntityType(Enum):
     PLAYER = 0
     GROUND = auto()
@@ -66,8 +66,9 @@ class EntityType(Enum):
     ENEMY = auto()
     POWERUP = auto()
 
+
 @dataclass
-class Entity():
+class Entity:
     x: int
     y: int
     w: int
@@ -76,13 +77,16 @@ class Entity():
     dy: int
     ty: EntityType
 
+
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
     def __init__(self, rl: bool = False):
         tools.State.__init__(self)
         self.player = None
 
-    
+        self.death_timeout = 0 if rl else 3000
+        self.live_change_on_death = 0 if rl else 1
+
     # RL agent ====================================================================
     class env:
         def __init__(self):
@@ -101,7 +105,6 @@ class Level(tools.State):
 
             self.keys = {}
 
-
         def reset(self, seed=42):
             # reset env
 
@@ -114,12 +117,12 @@ class Level(tools.State):
             # get amount of different values (determines the network architecture)
 
             return obseraction_space
-        
+
         def action_space(self):
             # return action space size
 
             return action_space_size
-        
+
         def random_action(self):
             # return random chosen action
             return action
@@ -132,11 +135,11 @@ class Level(tools.State):
             self.state = next_state
 
             return next_state, reward, terminated, truncated
-        
+
         def close(self):
             # close environent (close pygame etc.)
             return
-        
+
         def getkeys(self):
             # give new key dict
 
@@ -144,7 +147,6 @@ class Level(tools.State):
             action = "jump"
             self.keys[tools.keybinding[action]] = True
             return self.keys
-
 
     class CartPoleEnv:
         def __init__(self, render=False, seed=42):
@@ -178,7 +180,6 @@ class Level(tools.State):
         def close(self):
             self.env.close()
 
-
     class π_θ(nn.Module):
         def __init__(self, state_size, action_size, network_size):
             super().__init__()
@@ -193,7 +194,6 @@ class Level(tools.State):
 
         def forward(self, x):
             return self.net(x)
-
 
     class V_network(nn.Module):
         def __init__(self, state_size, action_size, network_size):
@@ -210,13 +210,13 @@ class Level(tools.State):
             return self.net(x).squeeze(-1)
 
     @staticmethod
-    def PPO_clipped_train(gamma, learning_rate, max_steps, network_size, epsilon, epochs):
+    def PPO_clipped_train(
+        gamma, learning_rate, max_steps, network_size, epsilon, epochs
+    ):
         # placeholder ppo
-                
 
         env.close()
         return returns, step_list
-
 
     # if __name__ == "__main__":
     #     # run example
@@ -233,13 +233,11 @@ class Level(tools.State):
     #     mean_return = np.mean(np.array(res),axis=0)
     #     print(f"The mean return per eval over 5 repetitions: {mean_return}")
 
-
     # end of RL agent ====================================================================
-
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
-        
+
         # Initialize game information
         self.game_info = persist
         self.persist = self.game_info
@@ -271,8 +269,8 @@ class Level(tools.State):
 
     # Function to load the map data from a JSON file
     def load_map(self):
-        map_file = 'level_' + str(self.game_info[c.LEVEL_NUM]) + '.json'
-        file_path = os.path.join('source', 'data', 'maps', map_file)
+        map_file = "level_" + str(self.game_info[c.LEVEL_NUM]) + ".json"
+        file_path = os.path.join("source", "data", "maps", map_file)
         f = open(file_path)
         self.map_data = json.load(f)
         f.close()
@@ -282,9 +280,13 @@ class Level(tools.State):
         img_name = self.map_data[c.MAP_IMAGE]
         self.background = setup.GFX[img_name]
         self.bg_rect = self.background.get_rect()
-        self.background = pg.transform.scale(self.background,
-                                    (int(self.bg_rect.width*c.BACKGROUND_MULTIPLER),
-                                    int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)))
+        self.background = pg.transform.scale(
+            self.background,
+            (
+                int(self.bg_rect.width * c.BACKGROUND_MULTIPLER),
+                int(self.bg_rect.height * c.BACKGROUND_MULTIPLER),
+            ),
+        )
         self.bg_rect = self.background.get_rect()
 
         self.level = pg.Surface((self.bg_rect.w, self.bg_rect.h)).convert()
@@ -295,7 +297,9 @@ class Level(tools.State):
         self.map_list = []
         if c.MAP_MAPS in self.map_data:
             for data in self.map_data[c.MAP_MAPS]:
-                self.map_list.append((data['start_x'], data['end_x'], data['player_x'], data['player_y']))
+                self.map_list.append(
+                    (data["start_x"], data["end_x"], data["player_x"], data["player_y"])
+                )
             self.start_x, self.end_x, self.player_x, self.player_y = self.map_list[0]
         else:
             self.start_x = 0
@@ -322,8 +326,11 @@ class Level(tools.State):
         group = pg.sprite.Group()
         if name in self.map_data:
             for data in self.map_data[name]:
-                group.add(stuff.Collider(data['x'], data['y'],
-                        data['width'], data['height'], name))
+                group.add(
+                    stuff.Collider(
+                        data["x"], data["y"], data["width"], data["height"], name
+                    )
+                )
         return group
 
     # Function to set up pipe objects on the map
@@ -331,8 +338,15 @@ class Level(tools.State):
         self.pipe_group = pg.sprite.Group()
         if c.MAP_PIPE in self.map_data:
             for data in self.map_data[c.MAP_PIPE]:
-                self.pipe_group.add(stuff.Pipe(data['x'], data['y'],
-                    data['width'], data['height'], data['type']))
+                self.pipe_group.add(
+                    stuff.Pipe(
+                        data["x"],
+                        data["y"],
+                        data["width"],
+                        data["height"],
+                        data["type"],
+                    )
+                )
 
     # Function to set up slider objects on the map
     def setup_slider(self):
@@ -343,14 +357,23 @@ class Level(tools.State):
                     vel = data[c.VELOCITY]
                 else:
                     vel = 1
-                self.slider_group.add(stuff.Slider(data['x'], data['y'], data['num'],
-                    data['direction'], data['range_start'], data['range_end'], vel))
+                self.slider_group.add(
+                    stuff.Slider(
+                        data["x"],
+                        data["y"],
+                        data["num"],
+                        data["direction"],
+                        data["range_start"],
+                        data["range_end"],
+                        vel,
+                    )
+                )
 
     def setup_static_coin(self):
         self.static_coin_group = pg.sprite.Group()
         if c.MAP_COIN in self.map_data:
             for data in self.map_data[c.MAP_COIN]:
-                self.static_coin_group.add(coin.StaticCoin(data['x'], data['y']))
+                self.static_coin_group.add(coin.StaticCoin(data["x"], data["y"]))
 
     def setup_brick_and_box(self):
         self.coin_group = pg.sprite.Group()
@@ -365,10 +388,14 @@ class Level(tools.State):
         self.box_group = pg.sprite.Group()
         if c.MAP_BOX in self.map_data:
             for data in self.map_data[c.MAP_BOX]:
-                if data['type'] == c.TYPE_COIN:
-                    self.box_group.add(box.Box(data['x'], data['y'], data['type'], self.coin_group))
+                if data["type"] == c.TYPE_COIN:
+                    self.box_group.add(
+                        box.Box(data["x"], data["y"], data["type"], self.coin_group)
+                    )
                 else:
-                    self.box_group.add(box.Box(data['x'], data['y'], data['type'], self.powerup_group))
+                    self.box_group.add(
+                        box.Box(data["x"], data["y"], data["type"], self.powerup_group)
+                    )
 
     # Function to set up the player object
     def setup_player(self):
@@ -404,30 +431,39 @@ class Level(tools.State):
                 map_index = data[c.MAP_INDEX]
             else:
                 map_index = 0
-            self.checkpoint_group.add(stuff.Checkpoint(data['x'], data['y'], data['width'],
-                data['height'], data['type'], enemy_groupid, map_index))
+            self.checkpoint_group.add(
+                stuff.Checkpoint(
+                    data["x"],
+                    data["y"],
+                    data["width"],
+                    data["height"],
+                    data["type"],
+                    enemy_groupid,
+                    map_index,
+                )
+            )
 
     def setup_flagpole(self):
         self.flagpole_group = pg.sprite.Group()
         if c.MAP_FLAGPOLE in self.map_data:
             for data in self.map_data[c.MAP_FLAGPOLE]:
-                if data['type'] == c.FLAGPOLE_TYPE_FLAG:
-                    sprite = stuff.Flag(data['x'], data['y'])
+                if data["type"] == c.FLAGPOLE_TYPE_FLAG:
+                    sprite = stuff.Flag(data["x"], data["y"])
                     self.flag = sprite
-                elif data['type'] == c.FLAGPOLE_TYPE_POLE:
-                    sprite = stuff.Pole(data['x'], data['y'])
+                elif data["type"] == c.FLAGPOLE_TYPE_POLE:
+                    sprite = stuff.Pole(data["x"], data["y"])
                 else:
-                    sprite = stuff.PoleTop(data['x'], data['y'])
+                    sprite = stuff.PoleTop(data["x"], data["y"])
                 self.flagpole_group.add(sprite)
-
 
     def setup_sprite_groups(self):
         self.dying_group = pg.sprite.Group()
         self.enemy_group = pg.sprite.Group()
         self.shell_group = pg.sprite.Group()
 
-        self.ground_step_pipe_group = pg.sprite.Group(self.ground_group,
-                        self.pipe_group, self.step_group, self.slider_group)
+        self.ground_step_pipe_group = pg.sprite.Group(
+            self.ground_group, self.pipe_group, self.step_group, self.slider_group
+        )
         self.player_group = pg.sprite.Group(self.player)
 
     def get_relevant_from_group(self, group, entity_type):
@@ -436,15 +472,17 @@ class Level(tools.State):
             dx = stuff.rect.x - self.viewport.x
             if dx < -30 or dx > 790:
                 continue
-            stuffs.append(Entity(
-                x=stuff.rect.centerx + 21 - self.player.rect.centerx,
-                y=stuff.rect.centery + 21 - self.player.rect.bottom,
-                w=stuff.rect.w,
-                h=stuff.rect.h,
-                dx=stuff.x_vel if hasattr(stuff, 'x_vel') else 0,
-                dy=stuff.y_vel if hasattr(stuff, 'y_vel') else 0,
-                ty=entity_type,
-            ))
+            stuffs.append(
+                Entity(
+                    x=stuff.rect.centerx + 21 - self.player.rect.centerx,
+                    y=stuff.rect.centery + 21 - self.player.rect.bottom,
+                    w=stuff.rect.w,
+                    h=stuff.rect.h,
+                    dx=stuff.x_vel if hasattr(stuff, "x_vel") else 0,
+                    dy=stuff.y_vel if hasattr(stuff, "y_vel") else 0,
+                    ty=entity_type,
+                )
+            )
         return stuffs
 
     def get_relevant_from_large_group(self, group, entity_type=EntityType.GROUND):
@@ -461,15 +499,17 @@ class Level(tools.State):
                 if dx > 790:
                     break
                 for y in range(large.rect.y, large.rect.y + large.rect.h, 43):
-                    largers.append(Entity(
-                        x=x + 21 - self.player.rect.centerx,
-                        y=y + 21 - self.player.rect.bottom,
-                        w=43,
-                        h=43,
-                        dx=0,
-                        dy=0,
-                        ty=entity_type,
-                    ))
+                    largers.append(
+                        Entity(
+                            x=x + 21 - self.player.rect.centerx,
+                            y=y + 21 - self.player.rect.bottom,
+                            w=43,
+                            h=43,
+                            dx=0,
+                            dy=0,
+                            ty=entity_type,
+                        )
+                    )
             # largers.append(Entity(
             #     x=large.rect.centerx - self.player.rect.centerx,
             #     y=large.rect.centery - self.player.rect.bottom,
@@ -482,23 +522,36 @@ class Level(tools.State):
         return largers
 
     def get_ground(self):
-        return (self.get_relevant_from_large_group(self.ground_group) +
-                self.get_relevant_from_large_group(self.pipe_group) +
-                self.get_relevant_from_large_group(self.step_group))
+        return (
+            self.get_relevant_from_large_group(self.ground_group)
+            + self.get_relevant_from_large_group(self.pipe_group)
+            + self.get_relevant_from_large_group(self.step_group)
+        )
 
     def get_enemies(self):
-        return (self.get_relevant_from_group(self.enemy_group, EntityType.ENEMY) +
-                self.get_relevant_from_group(self.shell_group, EntityType.ENEMY))
+        return self.get_relevant_from_group(
+            self.enemy_group, EntityType.ENEMY
+        ) + self.get_relevant_from_group(self.shell_group, EntityType.ENEMY)
 
     def get_state(self):
         # 20x15 grid
         state = [[None] * 20 for _ in range(15)]
 
         # make sure grid aligns with the entities
-        grid_x = ((self.viewport.x + 7) // 43 * 43)
-        grid_y = ((self.viewport.y) // 43 * 43)
+        grid_x = (self.viewport.x + 7) // 43 * 43
+        grid_y = (self.viewport.y) // 43 * 43
 
-        entities = [Entity(0, 0, self.player.rect.w, self.player.rect.h, self.player.x_vel, self.player.y_vel, EntityType.PLAYER)]
+        entities = [
+            Entity(
+                0,
+                0,
+                self.player.rect.w,
+                self.player.rect.h,
+                self.player.x_vel,
+                self.player.y_vel,
+                EntityType.PLAYER,
+            )
+        ]
         entities += self.get_ground()
         entities += self.get_relevant_from_group(self.brick_group, EntityType.BRICK)
         entities += self.get_relevant_from_group(self.box_group, EntityType.BOX)
@@ -517,84 +570,89 @@ class Level(tools.State):
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        
+
         # init easy_keys
         easy_keys = {}
-        easy_keys[tools.keybinding['left']] = False
-        easy_keys[tools.keybinding['right']] = False
-        easy_keys[tools.keybinding['jump']] = False
-        easy_keys[tools.keybinding['down']] = False
-        easy_keys[tools.keybinding['action']] = False
+        easy_keys[tools.keybinding["left"]] = False
+        easy_keys[tools.keybinding["right"]] = False
+        easy_keys[tools.keybinding["jump"]] = False
+        easy_keys[tools.keybinding["down"]] = False
+        easy_keys[tools.keybinding["action"]] = False
 
         # easy_keys = self.env.getkeys(self) # do func to give new keys
         print(keys)
         chosen_action = MacroMove.RIGHT_JUMP
         match chosen_action:
             case MacroMove.LEFT:
-                easy_keys[tools.keybinding['left']] = True
-                
+                easy_keys[tools.keybinding["left"]] = True
+
             case MacroMove.RIGHT:
-                easy_keys[tools.keybinding['right']] = True
-                
+                easy_keys[tools.keybinding["right"]] = True
+
             case MacroMove.ACTION:
-                easy_keys[tools.keybinding['action']] = True
-                
+                easy_keys[tools.keybinding["action"]] = True
+
             case MacroMove.JUMP:
-                easy_keys[tools.keybinding['jump']] = True
-                
+                easy_keys[tools.keybinding["jump"]] = True
+
             case MacroMove.LEFT_ACTION:
-                easy_keys[tools.keybinding['left']] = True
-                easy_keys[tools.keybinding['action']] = True
-                
+                easy_keys[tools.keybinding["left"]] = True
+                easy_keys[tools.keybinding["action"]] = True
+
             case MacroMove.RIGHT_ACTION:
-                easy_keys[tools.keybinding['right']] = True
-                easy_keys[tools.keybinding['action']] = True
-                
+                easy_keys[tools.keybinding["right"]] = True
+                easy_keys[tools.keybinding["action"]] = True
+
             case MacroMove.LEFT_JUMP:
-                easy_keys[tools.keybinding['left']] = True
-                easy_keys[tools.keybinding['jump']] = True
-                
+                easy_keys[tools.keybinding["left"]] = True
+                easy_keys[tools.keybinding["jump"]] = True
+
             case MacroMove.RIGHT_JUMP:
-                easy_keys[tools.keybinding['right']] = True
-                easy_keys[tools.keybinding['jump']] = True
-                
+                easy_keys[tools.keybinding["right"]] = True
+                easy_keys[tools.keybinding["jump"]] = True
+
             case MacroMove.LEFT_ACTION_JUMP:
-                easy_keys[tools.keybinding['left']] = True
-                easy_keys[tools.keybinding['action']] = True
-                easy_keys[tools.keybinding['jump']] = True
-                
+                easy_keys[tools.keybinding["left"]] = True
+                easy_keys[tools.keybinding["action"]] = True
+                easy_keys[tools.keybinding["jump"]] = True
+
             case MacroMove.RIGHT_ACTION_JUMP:
-                easy_keys[tools.keybinding['right']] = True
-                easy_keys[tools.keybinding['action']] = True
-                easy_keys[tools.keybinding['jump']] = True
-                
+                easy_keys[tools.keybinding["right"]] = True
+                easy_keys[tools.keybinding["action"]] = True
+                easy_keys[tools.keybinding["jump"]] = True
+
             case _:
                 print("Invalid macro action")
                 exit(1)
-        
+
         keepplayermoves = False
-        
-        if keepplayermoves: # override rl input keys
-            easy_keys[tools.keybinding['left']] = True if keys[tools.keybinding['left']] else False
-            easy_keys[tools.keybinding['right']] = True if keys[tools.keybinding['right']] else False
-            easy_keys[tools.keybinding['jump']] = True if keys[tools.keybinding['jump']] else False
-            easy_keys[tools.keybinding['down']] = True if keys[tools.keybinding['down']] else False
-            easy_keys[tools.keybinding['action']] = True if keys[tools.keybinding['action']] else False
-        
+
+        if keepplayermoves:  # override rl input keys
+            easy_keys[tools.keybinding["left"]] = (
+                True if keys[tools.keybinding["left"]] else False
+            )
+            easy_keys[tools.keybinding["right"]] = (
+                True if keys[tools.keybinding["right"]] else False
+            )
+            easy_keys[tools.keybinding["jump"]] = (
+                True if keys[tools.keybinding["jump"]] else False
+            )
+            easy_keys[tools.keybinding["down"]] = (
+                True if keys[tools.keybinding["down"]] else False
+            )
+            easy_keys[tools.keybinding["action"]] = (
+                True if keys[tools.keybinding["action"]] else False
+            )
+
         # right, left < action < jump
         # left, right, left action, right action, left action jump, right action jump, left jump, right jump, jump, action
-        
-
-
-        
-        
 
         # # make mario go right always
         # easy_keys[tools.keybinding['right']] = True
 
         # self.handle_states(keys) # do move and update state
-        self.handle_states(easy_keys) # do move and update state
-        state = self.get_state() # get RL state
+        self.handle_states(easy_keys)  # do move and update state
+        state = self.get_state()  # get RL state
         print("#####################")
         # for row in state:
         #     print(row)
@@ -608,7 +666,7 @@ class Level(tools.State):
         # b2 = brick.Brick(self.viewport.x - 30, self.player.rect.y, type=0)
         # self.brick_group.add(b1)
         # self.brick_group.add(b2)
-        self.draw(surface) # update frame
+        self.draw(surface)  # update frame
         # self.brick_group.remove(b1)
         # self.brick_group.remove(b2)
 
@@ -673,10 +731,15 @@ class Level(tools.State):
                 self.player.x_vel = 0
                 self.castle_timer = self.current_time
                 self.flagpole_group.add(stuff.CastleFlag(8745, 322))
-            elif (checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and
-                    self.player.y_vel < 0):
-                mushroom_box = box.Box(checkpoint.rect.x, checkpoint.rect.bottom - 40,
-                                c.TYPE_LIFEMUSHROOM, self.powerup_group)
+            elif (
+                checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and self.player.y_vel < 0
+            ):
+                mushroom_box = box.Box(
+                    checkpoint.rect.x,
+                    checkpoint.rect.bottom - 40,
+                    c.TYPE_LIFEMUSHROOM,
+                    self.powerup_group,
+                )
                 mushroom_box.start_bump(self.moving_score_list)
                 self.box_group.add(mushroom_box)
                 self.player.y_vel = 7
@@ -695,9 +758,13 @@ class Level(tools.State):
     def update_flag_score(self):
         base_y = c.GROUND_HEIGHT - 80
 
-        y_score_list = [(base_y, 100), (base_y-120, 400),
-                    (base_y-200, 800), (base_y-320, 2000),
-                    (0, 5000)]
+        y_score_list = [
+            (base_y, 100),
+            (base_y - 120, 400),
+            (base_y - 200, 800),
+            (base_y - 320, 2000),
+            (0, 5000),
+        ]
         for y, score in y_score_list:
             if self.player.rect.y > y:
                 self.update_score(score, self.flag)
@@ -719,7 +786,9 @@ class Level(tools.State):
             self.check_player_y_collisions()
 
     def check_player_x_collisions(self):
-        ground_step_pipe = pg.sprite.spritecollideany(self.player, self.ground_step_pipe_group)
+        ground_step_pipe = pg.sprite.spritecollideany(
+            self.player, self.ground_step_pipe_group
+        )
         brick = pg.sprite.spritecollideany(self.player, self.brick_group)
         box = pg.sprite.spritecollideany(self.player, self.box_group)
         enemy = pg.sprite.spritecollideany(self.player, self.enemy_group)
@@ -732,8 +801,10 @@ class Level(tools.State):
         elif brick:
             self.adjust_player_for_x_collisions(brick)
         elif ground_step_pipe:
-            if (ground_step_pipe.name == c.MAP_PIPE and
-                ground_step_pipe.type == c.PIPE_TYPE_HORIZONTAL):
+            if (
+                ground_step_pipe.name == c.MAP_PIPE
+                and ground_step_pipe.type == c.PIPE_TYPE_HORIZONTAL
+            ):
                 return
             self.adjust_player_for_x_collisions(ground_step_pipe)
         elif powerup:
@@ -812,7 +883,9 @@ class Level(tools.State):
         self.player.x_vel = 0
 
     def check_player_y_collisions(self):
-        ground_step_pipe = pg.sprite.spritecollideany(self.player, self.ground_step_pipe_group)
+        ground_step_pipe = pg.sprite.spritecollideany(
+            self.player, self.ground_step_pipe_group
+        )
         enemy = pg.sprite.spritecollideany(self.player, self.enemy_group)
         shell = pg.sprite.spritecollideany(self.player, self.shell_group)
 
@@ -836,10 +909,12 @@ class Level(tools.State):
                 self.move_to_dying_group(self.enemy_group, enemy)
                 direction = c.RIGHT if self.player.facing_right else c.LEFT
                 enemy.start_death_jump(direction)
-            elif (enemy.name == c.PIRANHA or
-                enemy.name == c.FIRESTICK or
-                enemy.name == c.FIRE_KOOPA or
-                enemy.name == c.FIRE):
+            elif (
+                enemy.name == c.PIRANHA
+                or enemy.name == c.FIRESTICK
+                or enemy.name == c.FIRE_KOOPA
+                or enemy.name == c.FIRE
+            ):
                 pass
             elif self.player.y_vel > 0:
                 self.update_score(100, enemy, 0)
@@ -893,8 +968,7 @@ class Level(tools.State):
                     if sprite.type == c.TYPE_COIN:
                         self.update_score(200, sprite, 1)
                     sprite.start_bump(self.moving_score_list)
-            elif (sprite.name == c.MAP_PIPE and
-                sprite.type == c.PIPE_TYPE_HORIZONTAL):
+            elif sprite.name == c.MAP_PIPE and sprite.type == c.PIPE_TYPE_HORIZONTAL:
                 return
 
             self.player.y_vel = 7
@@ -924,45 +998,50 @@ class Level(tools.State):
         brick.rect.y += 5
 
     def in_frozen_state(self):
-        if (self.player.state == c.SMALL_TO_BIG or
-            self.player.state == c.BIG_TO_SMALL or
-            self.player.state == c.BIG_TO_FIRE or
-            self.player.state == c.DEATH_JUMP or
-            self.player.state == c.DOWN_TO_PIPE or
-            self.player.state == c.UP_OUT_PIPE):
+        if (
+            self.player.state == c.SMALL_TO_BIG
+            or self.player.state == c.BIG_TO_SMALL
+            or self.player.state == c.BIG_TO_FIRE
+            or self.player.state == c.DEATH_JUMP
+            or self.player.state == c.DOWN_TO_PIPE
+            or self.player.state == c.UP_OUT_PIPE
+        ):
             return True
         else:
             return False
 
     def check_is_falling(self, sprite):
         sprite.rect.y += 1
-        check_group = pg.sprite.Group(self.ground_step_pipe_group,
-                            self.brick_group, self.box_group)
+        check_group = pg.sprite.Group(
+            self.ground_step_pipe_group, self.brick_group, self.box_group
+        )
 
         if pg.sprite.spritecollideany(sprite, check_group) is None:
-            if (sprite.state == c.WALK_AUTO or
-                sprite.state == c.END_OF_LEVEL_FALL):
+            if sprite.state == c.WALK_AUTO or sprite.state == c.END_OF_LEVEL_FALL:
                 sprite.state = c.END_OF_LEVEL_FALL
-            elif (sprite.state != c.JUMP and
-                sprite.state != c.FLAGPOLE and
-                not self.in_frozen_state()):
+            elif (
+                sprite.state != c.JUMP
+                and sprite.state != c.FLAGPOLE
+                and not self.in_frozen_state()
+            ):
                 sprite.state = c.FALL
         sprite.rect.y -= 1
 
     def check_for_player_death(self):
-        if (self.player.rect.y > c.SCREEN_HEIGHT or
-            self.overhead_info.time <= 0):
+        if self.player.rect.y > c.SCREEN_HEIGHT or self.overhead_info.time <= 0:
             self.player.start_death_jump(self.game_info)
             self.death_timer = self.current_time
 
     def check_if_player_on_IN_pipe(self):
-        '''check if player is on the pipe which can go down in to it '''
+        """check if player is on the pipe which can go down in to it"""
         self.player.rect.y += 1
         pipe = pg.sprite.spritecollideany(self.player, self.pipe_group)
         if pipe and pipe.type == c.PIPE_TYPE_IN:
-            if (self.player.crouching and
-                self.player.rect.x < pipe.rect.centerx and
-                self.player.rect.right > pipe.rect.centerx):
+            if (
+                self.player.crouching
+                and self.player.rect.x < pipe.rect.centerx
+                and self.player.rect.right > pipe.rect.centerx
+            ):
                 self.player.state = c.DOWN_TO_PIPE
         self.player.rect.y -= 1
 
@@ -981,15 +1060,19 @@ class Level(tools.State):
             self.next = c.LOAD_SCREEN
 
     def update_viewport(self):
-        third = self.viewport.x + self.viewport.w//3
+        third = self.viewport.x + self.viewport.w // 3
         player_center = self.player.rect.centerx
 
-        if (self.player.state != c.SMALL_TO_BIG and
-            self.player.state != c.BIG_TO_FIRE and
-            self.player.state != c.BIG_TO_SMALL):
-            if (self.player.x_vel > 0 and
-                player_center >= third and
-                self.viewport.right < self.end_x):
+        if (
+            self.player.state != c.SMALL_TO_BIG
+            and self.player.state != c.BIG_TO_FIRE
+            and self.player.state != c.BIG_TO_SMALL
+        ):
+            if (
+                self.player.x_vel > 0
+                and player_center >= third
+                and self.viewport.right < self.end_x
+            ):
                 self.viewport.x += round(self.player.x_vel)
             elif self.player.x_vel < 0 and self.viewport.x > self.start_x:
                 self.viewport.x += round(self.player.x_vel)
@@ -1026,5 +1109,5 @@ class Level(tools.State):
             self.ground_step_pipe_group.draw(self.level)
             self.checkpoint_group.draw(self.level)
 
-        surface.blit(self.level, (0,0), self.viewport)
+        surface.blit(self.level, (0, 0), self.viewport)
         self.overhead_info.draw(surface)
