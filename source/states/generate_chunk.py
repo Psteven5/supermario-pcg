@@ -14,16 +14,16 @@ from .. import constants as c
 
 
 class GenerateChunk():
-    def __init__(self, chunk_size, difficulty,chances=[]):
+    def __init__(self, chunk_size,chances=[]):
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
-        self.difficulty = difficulty
+        self.difficulty = 3
 
         # Chances for different level components (between 0.0 and 1.0)
         # given an array chances:
-        # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
-        if len(chances) >= 5:
+        # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies, 5 - piranha in pipe
+        if len(chances) >= 6:
             # Filtering in case a value is not inbetween 0.0 and 1.0
             filter_chances = [c if 0.0 <= c <= 1.0 else 0.0 for c in chances]
 
@@ -32,6 +32,7 @@ class GenerateChunk():
             self.bricks_chance = filter_chances[2]
             self.box_chance = filter_chances[3]
             self.enemies_chance = filter_chances[4]
+            self.piranha_pipe = filter_chances[5]
         else:
             # Default values
             self.gaps_chance = 0.3
@@ -39,6 +40,7 @@ class GenerateChunk():
             self.bricks_chance = 0.5
             self.box_chance = 0.1
             self.enemies_chance = 0.3
+            self.piranha_pipe = 0.2
 
         self.chunk = {
             c.MAP_IMAGE: "level_1",
@@ -145,6 +147,9 @@ class GenerateChunk():
         # height_type 0: small, 1: medium, 2: large
         heights = [84, 126, 170]
         h = heights[height_type]
+        # Chance of having a piranha in the pipe
+        if random.random() < self.piranha_pipe:
+            print("piranha in pipe")
         self.chunk[c.MAP_PIPE].append({
             "x": self.current_x,
             "y": self.GROUND_Y - h,
@@ -200,7 +205,8 @@ class GenerateChunk():
     def generate_enemy(self, first=False):
         enemy_list = self.chunk[c.MAP_ENEMY]
         safe_start_x = c.SCREEN_WIDTH + 100
-
+        enemy_types = min(self.difficulty * 0,75, 2)
+        # 0 Goomba, 1 Koopa, 2 Koopa flying, 3 piranha plant, 4 firestick, 5 bowser
         # Generate enemies across all ground segments.
         for seg in self.chunk[c.MAP_GROUND]:
             start_x = seg["x"]
@@ -210,8 +216,7 @@ class GenerateChunk():
 
             while current_x < end_x - 150:
                 if random.random() < self.enemies_chance:
-                    enemy_type = random.randint(0, 2)
-
+                    enemy_type = random.randint(0, enemy_types)
                     enemy = {
                         "x": int(current_x),
                         "y": int(self.GROUND_Y - 40),
