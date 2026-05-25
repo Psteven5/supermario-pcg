@@ -22,11 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__author__ = 'm0rniac'
+__author__ = "m0rniac"
 
-from .. import setup, tools
 from .. import constants as c
+from .. import setup, tools
 from ..components import info
+
 
 class LoadScreen(tools.State):
     def __init__(self, rl: bool = False):
@@ -72,6 +73,7 @@ class LoadScreen(tools.State):
         # Helper function to fill the surface with a specific color
         surface.fill(color)
 
+
 class GameOver(LoadScreen):
     def __init__(self):
         super().__init__()
@@ -84,6 +86,7 @@ class GameOver(LoadScreen):
     def set_info_state(self):
         # Override the info state to be displayed after GameOver
         return c.GAME_OVER
+
 
 class TimeOut(LoadScreen):
     def __init__(self):

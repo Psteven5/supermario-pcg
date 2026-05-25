@@ -22,23 +22,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__author__ = 'm0rniac'
+__author__ = "m0rniac"
 
 import os
-import pygame as pg
 from abc import ABC, abstractmethod
+from enum import IntEnum, auto
+
+import gymnasium as gym
+import numpy as np
+import pygame as pg
+from gymnasium import spaces
+
+
+class MacroMove(IntEnum):
+    LEFT = 0
+    RIGHT = auto()
+    ACTION = auto()
+    JUMP = auto()
+    LEFT_ACTION = auto()
+    RIGHT_ACTION = auto()
+    LEFT_JUMP = auto()
+    RIGHT_JUMP = auto()
+    LEFT_ACTION_JUMP = auto()
+    RIGHT_ACTION_JUMP = auto()
+
 
 # Dictionary defining keybindings for different actions
 keybinding = {
-    'action': pg.K_s,
-    'jump': pg.K_SPACE,
-    'left': pg.K_LEFT,
-    'right': pg.K_RIGHT,
-    'down': pg.K_DOWN
+    "action": pg.K_s,
+    "jump": pg.K_SPACE,
+    "left": pg.K_LEFT,
+    "right": pg.K_RIGHT,
+    "down": pg.K_DOWN,
 }
 
+
 # Class representing a State
-class State():
+class State:
     def __init__(self):
         # State variables
         self.start_time = 0.0
@@ -49,7 +69,7 @@ class State():
 
     @abstractmethod
     def startup(self, current_time, persist):
-        '''Abstract method to be overridden in child classes'''
+        """Abstract method to be overridden in child classes"""
 
     def cleanup(self):
         # Reset the state after it's done
@@ -57,12 +77,26 @@ class State():
         return self.persist
 
     @abstractmethod
-    def update(self, surface, keys, current_time):
-        '''Abstract method to be overridden in child classes'''
+    def update(self, surface, keys, current_time) -> tuple:
+        """Abstract method to be overridden in child classes"""
+
 
 # Class representing the Control for game states
-class Control():
-    def __init__(self):
+class Control(gym.Env):
+    def __init__(
+        self, width=20, height=15, num_features=7, num_frames=4, num_actions=10
+    ):
+        super().__init__()
+
+        self.observation_space = spaces.Box(
+            low=-1.0,
+            high=1.0,
+            shape=(num_features * num_frames, height, width),
+            dtype=np.float32,
+        )
+
+        self.action_space = spaces.Discrete(num_actions)
+
         # Control variables
         self.screen = pg.display.get_surface()
         self.done = False
@@ -73,6 +107,7 @@ class Control():
         self.state_dict = {}
         self.state_name = None
         self.state = None
+        self.first_time = True
 
     def setup_states(self, state_dict, start_state):
         # Set up game states
@@ -80,12 +115,15 @@ class Control():
         self.state_name = start_state
         self.state = self.state_dict[self.state_name]
 
-    def update(self):
+    def update(self, keys=None):
+        if keys is None:
+            keys = self.keys
+
         # Update current game state
         self.current_time = pg.time.get_ticks()
         if self.state.done:
             self.flip_state()
-        self.state.update(self.screen, self.keys, self.current_time)
+        return self.state.update(self.screen, keys, self.current_time)
 
     def flip_state(self):
         # Switch to the next game state
@@ -104,13 +142,90 @@ class Control():
             elif event.type == pg.KEYUP:
                 self.keys = pg.key.get_pressed()
 
+    def step(self, action):
+        # init easy_keys
+        keys = {}
+        keys[keybinding["left"]] = False
+        keys[keybinding["right"]] = False
+        keys[keybinding["jump"]] = False
+        keys[keybinding["down"]] = False
+        keys[keybinding["action"]] = False
+
+        # easy_keys = self.env.getkeys(self) # do func to give new keys
+        match action:
+            case MacroMove.LEFT:
+                keys[keybinding["left"]] = True
+
+            case MacroMove.RIGHT:
+                keys[keybinding["right"]] = True
+
+            case MacroMove.ACTION:
+                keys[keybinding["action"]] = True
+
+            case MacroMove.JUMP:
+                keys[keybinding["jump"]] = True
+
+            case MacroMove.LEFT_ACTION:
+                keys[keybinding["left"]] = True
+                keys[keybinding["action"]] = True
+
+            case MacroMove.RIGHT_ACTION:
+                keys[keybinding["right"]] = True
+                keys[keybinding["action"]] = True
+
+            case MacroMove.LEFT_JUMP:
+                keys[keybinding["left"]] = True
+                keys[keybinding["jump"]] = True
+
+            case MacroMove.RIGHT_JUMP:
+                keys[keybinding["right"]] = True
+                keys[keybinding["jump"]] = True
+
+            case MacroMove.LEFT_ACTION_JUMP:
+                keys[keybinding["left"]] = True
+                keys[keybinding["action"]] = True
+                keys[keybinding["jump"]] = True
+
+            case MacroMove.RIGHT_ACTION_JUMP:
+                keys[keybinding["right"]] = True
+                keys[keybinding["action"]] = True
+                keys[keybinding["jump"]] = True
+
+            case _:
+                print("Invalid macro action")
+                exit(1)
+
+        state, reward, done = self.update(keys)
+        pg.display.update()
+
+        return state, reward, done, False, {}
+
+    def reset(self, seed=None, options=None):
+        if not self.first_time:
+            self.state.update_game_info()
+            self.state.done = True
+
+            while not hasattr(self.state, "update_wrapper"):
+                self.initial_step()
+
+        self.first_time = False
+        state, _, _ = self.update()
+        info = {}
+        return state, info
+
+    def initial_step(self):
+        self.event_loop()
+        self.update()
+        pg.display.update()
+
     def main(self):
         # Main game loop
         while not self.done:
             self.event_loop()
             self.update()
             pg.display.update()
-            self.clock.tick(self.fps)
+            input()
+
 
 # Function to get an image from a sprite sheet
 def get_image(sheet, x, y, width, height, colorkey, scale):
@@ -119,11 +234,16 @@ def get_image(sheet, x, y, width, height, colorkey, scale):
 
     image.blit(sheet, (0, 0), (x, y, width, height))
     image.set_colorkey(colorkey)
-    image = pg.transform.scale(image, (int(rect.width*scale), int(rect.height*scale)))
+    image = pg.transform.scale(
+        image, (int(rect.width * scale), int(rect.height * scale))
+    )
     return image
 
+
 # Function to load all graphics from a specified directory
-def load_all_gfx(directory, colorkey=(255, 0, 255), accept=('.png', '.jpg', '.bmp', '.gif')):
+def load_all_gfx(
+    directory, colorkey=(255, 0, 255), accept=(".png", ".jpg", ".bmp", ".gif")
+):
     graphics = {}
     for pic in os.listdir(directory):
         name, ext = os.path.splitext(pic)

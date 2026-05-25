@@ -22,17 +22,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__author__ = 'm0rniac'
+__author__ = "m0rniac"
 
 import pygame as pg
-from . import setup, tools
+from stable_baselines3 import PPO
+
 from . import constants as c
-from .states import main_menu, load_screen, level, rl_level
+from . import setup, tools
+from .states import level, load_screen, main_menu
+from .states.ppo import MarioEncoder, MarioPPOWrapper
+
 
 # Define the main function of the script
 def main():
     # Create an instance of the Control class from the 'tools' module
-    game = tools.Control()
+    game = tools.Control(num_frames=1)
 
     rl = True
 
@@ -43,11 +47,34 @@ def main():
         # c.LEVEL: level.Level(),
         c.LEVEL: level.Level(rl),
         c.GAME_OVER: load_screen.GameOver(),
-        c.TIME_OUT: load_screen.TimeOut()
+        c.TIME_OUT: load_screen.TimeOut(),
     }
 
     # Setup the states of the game using the state dictionary and set the initial state to 'MAIN_MENU'
     game.setup_states(state_dict, c.MAIN_MENU)
+    game.state.reset_game_info()
+    game.state.done = True
+    while type(game.state) is not level.Level:
+        game.initial_step()
+
+    policy_kwargs = dict(
+        features_extractor_class=MarioEncoder,
+        features_extractor_kwargs=dict(features_dim=128),
+    )
+
+    model = PPO(
+        policy=MarioPPOWrapper,
+        env=game,
+        policy_kwargs=policy_kwargs,
+        learning_rate=0.0003,
+        n_steps=2_048,
+        batch_size=64,
+        n_epochs=10,
+        gamma=0.99,
+        verbose=1,
+    )
+
+    model.learn(total_timesteps=100)
 
     # Start the main game loop
-    game.main()
+    # game.main()
