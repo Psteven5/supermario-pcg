@@ -80,18 +80,18 @@ class Info():
         self.coin_count_text = []
         self.mario_label = []
         self.world_label = []
-        self.time_label = []
+        # self.time_label = []
         self.stage_label = []
 
         self.create_label(self.score_text, '000000', 75, 55)
         self.create_label(self.coin_count_text, '*00', 300, 55)
         self.create_label(self.mario_label, 'MARIO', 75, 30)
         self.create_label(self.world_label, 'WORLD', 450, 30)
-        self.create_label(self.time_label, 'TIME', 625, 30)
+        #self.create_label(self.time_label, 'TIME', 625, 30)
         self.create_label(self.stage_label, '1-1', 472, 55)
 
         self.info_labels = [self.score_text, self.coin_count_text, self.mario_label,
-                    self.world_label, self.time_label, self.stage_label]
+                    self.world_label, self.stage_label]#self.time_label, self.stage_label]
 
     def create_state_labels(self):
         if self.state == c.MAIN_MENU:
@@ -148,7 +148,7 @@ class Info():
         self.current_time = 0
 
         self.clock_time_label = []
-        self.create_label(self.clock_time_label, str(self.time), 645, 55)
+        #self.create_label(self.clock_time_label, str(self.time), 645, 55)
         self.state_labels = [*self.info_labels, self.clock_time_label]
 
     def create_game_over_labels(self):
@@ -190,11 +190,11 @@ class Info():
         self.flashing_coin.update(level_info[c.CURRENT_TIME])
         if self.state == c.LOAD_SCREEN:
             self.update_text(self.stage_label2, level_info[c.LEVEL_NUM])
-        if self.state == c.LEVEL:
-            if (level_info[c.CURRENT_TIME] - self.current_time) > 1000:
-                self.current_time = level_info[c.CURRENT_TIME]
-                self.time -= 1
-                self.update_text(self.clock_time_label, self.time, True)
+        # if self.state == c.LEVEL:
+        #     if (level_info[c.CURRENT_TIME] - self.current_time) > 1000:
+        #         self.current_time = level_info[c.CURRENT_TIME]
+        #         self.time -= 1
+        #         self.update_text(self.clock_time_label, self.time, True)
     
     def update_text(self, text, score, reset=False):
         if reset and len(text) > len(str(score)):

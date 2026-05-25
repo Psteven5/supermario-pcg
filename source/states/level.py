@@ -772,8 +772,7 @@ class Level(tools.State):
         sprite.rect.y -= 1
     
     def check_for_player_death(self):
-        if (self.player.rect.y > c.SCREEN_HEIGHT or
-            self.overhead_info.time <= 0):
+        if (self.player.rect.y > c.SCREEN_HEIGHT): #or self.overhead_info.time <= 0):
             self.player.start_death_jump(self.game_info)
             self.death_timer = self.current_time
 
@@ -795,8 +794,8 @@ class Level(tools.State):
 
         if self.persist[c.LIVES] == 0:
             self.next = c.GAME_OVER
-        elif self.overhead_info.time == 0:
-            self.next = c.TIME_OUT
+        # elif self.overhead_info.time == 0:
+        #     self.next = c.TIME_OUT
         elif self.player.dead:
             self.next = c.LOAD_SCREEN
         else:
