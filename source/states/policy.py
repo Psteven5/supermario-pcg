@@ -10,6 +10,7 @@ class Policy(nn.Module):
             Encoder(num_features, num_frames),
 
             nn.Linear(128, num_actions),
+            nn.Softmax(dim=1),
         )
 
     def forward(self, x):
