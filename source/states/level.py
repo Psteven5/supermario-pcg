@@ -231,14 +231,16 @@ class Level(tools.State):
         # Shift viewpoint
         self.viewport.x -= offset
 
+        # Update background offset
+        self.bg_offset = (self.bg_offset + offset) % self.background.get_width()
+
         # shift all sprites
         for group in [self.ground_group, self.step_group, self.pipe_group, self.slider_group,
                     self.static_coin_group, self.brick_group, self.box_group, self.enemy_group, self.shell_group,
                     self.powerup_group, self.coin_group, self.brickpiece_group,
                     self.checkpoint_group, self.flagpole_group, self.dying_group]:
             for sprite in group:
-                sprite.rect.x -= offset
-       
+                sprite.rect.x -= offset       
 
 
     # Function to set up the level background
@@ -250,6 +252,7 @@ class Level(tools.State):
                                     (int(self.bg_rect.width*c.BACKGROUND_MULTIPLER),
                                     int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)))
         self.bg_rect = self.background.get_rect()
+        self.bg_offset = 0
 
         self.level = pg.Surface((self.chunk_size*2, c.SCREEN_HEIGHT)).convert()
         self.viewport = setup.SCREEN.get_rect(bottom=self.bg_rect.bottom)
@@ -407,6 +410,7 @@ class Level(tools.State):
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+        #print(self.player.rect.x)
         self.handle_states(keys)
         self.draw(surface)
     
@@ -461,9 +465,9 @@ class Level(tools.State):
         if checkpoint:
             if checkpoint.type == c.CHECKPOINT_TYPE_ENEMY:
                 index = checkpoint.enemy_groupid #% len(self.enemy_group_list)
-                print("index: ", index)
+                #print("index: ", index)
                 group = self.enemy_group_list[index]
-                print("group: ", group)
+                #print("group: ", group)
                 self.enemy_group.add(group)
             elif (checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and
                     self.player.y_vel < 0):
@@ -797,9 +801,14 @@ class Level(tools.State):
         #self.level.blit(self.background, self.viewport, self.viewport)
         # Repeat the background image infinitely
         bg_width = self.background.get_width()
+        rel_x = (self.bg_offset + self.viewport.x) % bg_width
+        
+        self.level.blit(self.background, (int(self.viewport.x - rel_x), 0))
+        self.level.blit(self.background, (int(self.viewport.x - rel_x + bg_width), 0))
 
-        for x in range(0, self.level.get_width(), bg_width):
-            self.level.blit(self.background, (x, 0))
+        #for x in range(0, self.level.get_width(), bg_width):
+        #    self.level.blit(self.background, (x, 0))
+        
         self.ground_group.draw(self.level)
         self.ground_step_pipe_group.draw(self.level)
         self.powerup_group.draw(self.level)
