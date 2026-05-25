@@ -40,7 +40,7 @@ class GenerateChunk():
             self.bricks_chance = 0.5
             self.box_chance = 0.1
             self.enemies_chance = 0.3
-            self.piranha_pipe = 0.2
+            self.piranha_pipe = 1.0
 
         self.chunk = {
             c.MAP_IMAGE: "level_1",
@@ -150,6 +150,18 @@ class GenerateChunk():
         # Chance of having a piranha in the pipe
         if random.random() < self.piranha_pipe:
             print("piranha in pipe")
+            enemy = {
+                        "x": self.current_x + 25,
+                        "y": self.GROUND_Y - h + 80,
+                        "direction": 0,
+                        "type": 3,
+                        "color": 0,
+                        "range" : 1,
+                        "range_start":self.GROUND_Y - h - 130 + 80, 
+                        "range_end":self.GROUND_Y - h + 80,
+                    }
+            group_index = len(self.chunk[c.MAP_ENEMY])
+            self.chunk[c.MAP_ENEMY].append({str(group_index): [enemy]})
         self.chunk[c.MAP_PIPE].append({
             "x": self.current_x,
             "y": self.GROUND_Y - h,
@@ -159,6 +171,24 @@ class GenerateChunk():
         })
         
         return h
+    
+        #     {"7":[
+        #     {"x":4440, "y":490, "direction":0, "type":3, "color":0, "range":1, "range_start":360, "range_end":490},
+        #     {"x":4696, "y":445, "direction":0, "type":3, "color":0, "range":1, "range_start":315, "range_end":445},
+        #     {"x":4954, "y":535, "direction":0, "type":3, "color":0, "range":1, "range_start":400, "range_end":535}
+        # ]},
+
+        #     "pipe":[
+        # {"x":4415, "y":410, "width": 82, "height":130, "type":0},
+        # {"x":4672, "y":367, "width": 82, "height":170, "type":0},
+        # {"x":4929, "y":453, "width": 82, "height": 86, "type":0},
+        
+        # {"x":7114, "y":325, "width":104, "height": 86, "type":2},
+        # {"x":7632, "y":410, "width": 82, "height":130, "type":1},
+        # {"x":7802, "y":410, "width":104, "height":130, "type":1},
+        # {"x":7974, "y":410, "width":104, "height":130, "type":1},
+        # {"x":8360, "y":453, "width": 82, "height": 86, "type":0},
+        # {"x":10500, "y":453, "width":104, "height": 86, "type":2}
 
     def generate_step(self, steps, direction=0):
         """Generates a staircase of blocks. 0 is up, 1 is down."""
