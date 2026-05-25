@@ -31,6 +31,9 @@ class Encoder(nn.Module):
 
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
+
+            nn.Linear(64, 128),
+            nn.ReLU(),
         )
 
     def forward(self, x):

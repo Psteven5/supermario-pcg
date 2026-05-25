@@ -9,9 +9,6 @@ class Policy(nn.Module):
         self.net = nn.Sequential(
             Encoder(num_features, num_frames),
 
-            nn.Linear(64, 128),
-            nn.ReLU(),
-
             nn.Linear(128, num_actions),
         )
 
