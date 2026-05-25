@@ -97,7 +97,7 @@ class Level(tools.State):
             generator = generate_chunk.GenerateChunk(self.chunk_size)
             generator.generate_chunk()
             self.load_next_chunk()
-        if self.player.rect.x > self.shift_threshold:
+        if self.viewport.x > self.shift_threshold:
             self.reset = True
             self.reset_map(self.chunk_size)
 
@@ -407,7 +407,6 @@ class Level(tools.State):
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        print(self.player.rect.x)
         self.handle_states(keys)
         self.draw(surface)
     
@@ -760,6 +759,7 @@ class Level(tools.State):
         
     def update_game_info(self):
         if self.player.dead:
+            self.reset = True
             self.persist[c.LIVES] -= 1
 
         if self.persist[c.LIVES] == 0:
