@@ -26,6 +26,7 @@ __author__ = "m0rniac"
 
 import json
 import os
+from collections import deque
 from dataclasses import dataclass
 from enum import Enum, auto
 from pprint import pprint
@@ -80,12 +81,14 @@ class Entity:
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self, rl: bool = False):
+    def __init__(self, rl: bool = False, num_frames=4):
         tools.State.__init__(self)
         self.player = None
 
         self.death_timeout = 0 if rl else 3000
         self.live_change_on_death = 0 if rl else 1
+
+        self.state_queue = deque(maxlen=num_frames)
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
@@ -420,40 +423,45 @@ class Level(tools.State):
 
         return state
 
-    def state_to_tensor(self, state: list) -> torch.Tensor:
-        height = len(state)
-        width = len(state[0])
-        state_T = torch.zeros((7, height, width), dtype=torch.float32)
+    def state_to_tensor(self) -> torch.Tensor:
+        num_frames = len(self.state_queue)
+        height = len(self.state_queue[0])
+        width = len(self.state_queue[0][0])
+        state_T = torch.zeros((7 * num_frames, height, width), dtype=torch.int16)
 
-        for y in range(height):
-            for x in range(width):
-                entity: Entity = state[y][x]
+        for i in range(num_frames):
+            for y in range(height):
+                for x in range(width):
+                    entity: Entity = self.state_queue[i][y][x]
 
-                # If the grid cell has an entity, map its properties to the channels
-                if entity is not None:
-                    state_T[0, y, x] = entity.x
-                    state_T[1, y, x] = entity.y
-                    state_T[2, y, x] = entity.w
-                    state_T[3, y, x] = entity.h
-                    state_T[4, y, x] = entity.dx
-                    state_T[5, y, x] = entity.dy
-                    state_T[6, y, x] = entity.ty.value
+                    # If the grid cell has an entity, map its properties to the channels
+                    if entity is not None:
+                        state_T[0 + i * 7, y, x] = entity.x
+                        state_T[1 + i * 7, y, x] = entity.y
+                        state_T[2 + i * 7, y, x] = entity.w
+                        state_T[3 + i * 7, y, x] = entity.h
+                        state_T[4 + i * 7, y, x] = entity.dx
+                        state_T[5 + i * 7, y, x] = entity.dy
+                        state_T[6 + i * 7, y, x] = entity.ty.value
+
+        # state_T / 860
+        state_T.clamp(-860, 860)
 
         return state_T
-
-    def update_wrapper(self, surface, keys, current_time):
-        pass
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
 
         self.handle_states(keys)  # do move and update state
         state = self.get_state()  # get RL state
+        self.state_queue.append(state)
+        while len(self.state_queue) < 4:
+            self.state_queue.append(state)
         reward = self.player.rect.x
         # print("#####################")
         self.draw(surface)  # update frame
 
-        return self.state_to_tensor(state), reward, self.player.dead
+        return self.state_to_tensor(), reward, self.player.dead
 
     def handle_states(self, keys):
         self.update_all_sprites(keys)

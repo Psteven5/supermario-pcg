@@ -89,10 +89,10 @@ class Control(gym.Env):
         super().__init__()
 
         self.observation_space = spaces.Box(
-            low=-1.0,
-            high=1.0,
+            low=-860,
+            high=860,
             shape=(num_features * num_frames, height, width),
-            dtype=np.float32,
+            dtype=np.int16,
         )
 
         self.action_space = spaces.Discrete(num_actions)
@@ -123,6 +123,7 @@ class Control(gym.Env):
         self.current_time = pg.time.get_ticks()
         if self.state.done:
             self.flip_state()
+
         return self.state.update(self.screen, keys, self.current_time)
 
     def flip_state(self):
@@ -201,17 +202,19 @@ class Control(gym.Env):
         return state, reward, done, False, {}
 
     def reset(self, seed=None, options=None):
+        print("RESET")
         if not self.first_time:
             self.state.update_game_info()
             self.state.done = True
 
-            while not hasattr(self.state, "update_wrapper"):
-                self.initial_step()
+        while True:
+            result = self.update()
+            if result is not None:
+                break
 
         self.first_time = False
-        state, _, _ = self.update()
         info = {}
-        return state, info
+        return result[0], info
 
     def initial_step(self):
         self.event_loop()

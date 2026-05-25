@@ -36,7 +36,7 @@ from .states.ppo import MarioEncoder, MarioPPOWrapper
 # Define the main function of the script
 def main():
     # Create an instance of the Control class from the 'tools' module
-    game = tools.Control(num_frames=1)
+    game = tools.Control()
 
     rl = True
 
@@ -74,7 +74,7 @@ def main():
         verbose=1,
     )
 
-    model.learn(total_timesteps=100)
+    model.learn(total_timesteps=1_000_000)
 
     # Start the main game loop
     # game.main()
