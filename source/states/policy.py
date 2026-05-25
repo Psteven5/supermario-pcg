@@ -1,21 +1,5 @@
 from torch import nn
-
-
-class ResidualBlock(nn.Module):
-    def __init__(self, channels):
-        super().__init__()
-
-        self.net = nn.Sequential(
-            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
-            nn.ReLU(),
-
-            nn.Conv2d(channels, channels, kernel_size=3, padding=1),
-        )
-
-        self.relu = nn.ReLU()
-    
-    def forward(self, x):
-        return self.relu(self.net(x) + x)
+from encoder import Encoder
 
 
 class Policy(nn.Module):
@@ -23,14 +7,7 @@ class Policy(nn.Module):
         super().__init__()
         
         self.net = nn.Sequential(
-            nn.Conv2d(num_features * num_frames, 32, kernel_size=3, padding=1),
-            nn.ReLU(),
-
-            ResidualBlock(64),
-            ResidualBlock(64),
-
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
+            Encoder(num_features, num_frames),
 
             nn.Linear(64, 128),
             nn.ReLU(),
