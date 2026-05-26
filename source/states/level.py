@@ -44,7 +44,7 @@ from .. import constants as c
 from .. import setup, tools
 from ..components import box, brick, coin, enemy, info, player, powerup, stuff
 from .helper import evaluate
-
+from ..tools import keybinding
 
 class MacroMove(Enum):
     LEFT = 0
@@ -105,6 +105,16 @@ class Level(tools.State):
         self.death_timer = 0
         self.castle_timer = 0
 
+        # Initialize variables for reward calculation ~ alexReward
+        self.prev_reward = 0.0
+        self.count = 1
+        self.max_x = 0.0
+        self.prev_score = self.game_info[c.SCORE]
+        self.reward = 0.0
+        self.prev_x = 110.0
+        self.prev_y = 0.0
+        self.jumptimer = 0
+
         # Initialize lists and overhead information
         self.moving_score_list = []
         self.overhead_info = info.Info(self.game_info, c.LEVEL)
@@ -114,6 +124,7 @@ class Level(tools.State):
         self.setup_background()
         self.setup_maps()
 
+        # Initialize variables for reward calculation ~ pieterReward
         self.last_x = self.player_x
         self.best_x = self.player_x
         self.top_score = self.persist[c.SCORE]
@@ -459,8 +470,78 @@ class Level(tools.State):
 
         return torch.from_numpy(state_np)
 
-    def update(self, surface, keys, current_time):
-        self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+    def calc_reward_alex(self, surface, keys, current_time):
+        # force longer minimum jump
+        if keys[keybinding["jump"]]:
+            if self.jumptimer == 0:
+                self.jumptimer = 10
+        if self.jumptimer > 0:
+            keys[keybinding["jump"]] = True
+            self.jumptimer -= 1
+
+        self.handle_states(keys)  # do move and update state
+        state = self.get_state()  # get RL state
+        self.state_queue.append(state)
+        while len(self.state_queue) < 4:
+            self.state_queue.append(state)
+        
+        use_max_x = False
+        if use_max_x:
+            # change max x here using offset when teleported to beginning
+            # self.max_x = ...
+
+            # detect improvement of max x
+            improved = False
+            if self.player.rect.x > self.max_x:
+                improved = True
+            if improved: # +r when improving
+                self.reward = self.player.rect.x - self.max_x
+            else: # -r when not
+                self.reward = -0.1
+            
+            # # small attraction to the right
+            # self.reward += self.player.x_vel * 0.00001
+
+        else: # use dx instead
+            # use dx as reward, more to the right: +r, more left -r
+            d_x = self.player.rect.x - self.prev_x
+            self.prev_x = self.player.rect.x
+            self.reward = d_x - 0.1
+
+        # # +r for jumping when standing still
+        # if d_x == 0 and self.player.rect.y > self.prev_y:
+        #     self.reward += (self.player.rect.y - self.prev_y) * 0.5 
+        #     print("hier")
+        # self.prev_y = self.player.rect.y
+
+        # # use score as well +r when added score
+        # d_score = self.game_info[c.SCORE] - self.prev_score
+        # self.prev_score = self.game_info[c.SCORE]
+        # self.reward += d_score * 0.02
+
+        # print reward trace
+        if self.reward == self.prev_reward:
+            self.count +=1
+            print("                       ", end = "\r")
+            print(f"{self.reward} x {self.count}", end = "\r")
+        else:
+            self.count = 1
+            print()
+            print(f"{self.reward} x {self.count}", end = "\r")
+        
+        # -r when player dies
+        if self.player.dead:
+            print()
+            print("dead")
+            self.reward = -15
+            print(self.reward)
+
+        self.prev_reward = self.reward # update prev_reward
+        self.max_x = max(self.max_x, self.player.rect.x) # update max x
+        
+        return self.reward
+
+    def calc_reward_pieter(self, surface, keys, current_time):
         if keys[tools.keybinding[c.JUMP]]:
             self.jump_count = min(self.jump_count+1, 36)
         if self.player.y_vel >= 0.0:
@@ -482,15 +563,27 @@ class Level(tools.State):
         if self.player.dead:
             reward -= 1.0
         # print("#####################")
-        self.draw(surface)  # update frame
-
+        
         print(reward)
+        
+        return reward
+
+    def update(self, surface, keys, current_time):
+        self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+        self.draw(surface)  # update frame
+        # select reward function
+        # pieter reward
+        reward = self.calc_reward_pieter(surface, keys, current_time)
+        # alex reward
+        # reward = self.calc_reward_alex(surface, keys, current_time)
+        
         if self.steps >= 10000:
             truncated = True
             self.player.dead = True
         else:
             truncated = False
             self.steps += 1
+
         return self.state_to_tensor(), reward, self.player.dead, truncated
 
     def handle_states(self, keys):
