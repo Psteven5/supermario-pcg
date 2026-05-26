@@ -91,7 +91,6 @@ class Level(tools.State):
         self.top_score = 0
         self.last_time = 0
         self.steps = 0
-        # self.reward = 0.0
 
         self.death_timeout = 0 if rl else 3000
         self.live_change_on_death = 0 if rl else 1
@@ -121,7 +120,6 @@ class Level(tools.State):
         self.last_time = self.persist[c.CURRENT_TIME]
         self.jump_count = 0
         self.steps = 0
-        # self.reward = 0.0
 
         # Set up various sprite groups for collisions and interactions
         self.ground_group = self.setup_collide(c.MAP_GROUND)
@@ -464,10 +462,9 @@ class Level(tools.State):
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         if keys[tools.keybinding[c.JUMP]]:
-            self.jump_count += 1
+            self.jump_count = min(self.jump_count+1, 58)
         else:
             self.jump_count = 0
-        print(self.jump_count)
         self.handle_states(keys)  # do move and update state
         state = self.get_state()  # get RL state
         self.state_queue.append(state)
