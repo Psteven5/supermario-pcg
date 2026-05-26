@@ -84,7 +84,10 @@ class Level(tools.State):
     def __init__(self, rl: bool = False, num_frames=4):
         tools.State.__init__(self)
         self.player = None
-        self.max_x = 0.0
+
+        self.last_x = 0.0
+        self.top_score = 0
+        self.steps = 0
         self.reward = 0.0
 
         self.death_timeout = 0 if rl else 3000
@@ -94,11 +97,9 @@ class Level(tools.State):
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
-
         # Initialize game information
         self.game_info = persist
         self.persist = self.game_info
-        self.game_info[c.CURRENT_TIME] = current_time
         self.death_timer = 0
         self.castle_timer = 0
 
@@ -110,6 +111,11 @@ class Level(tools.State):
         self.load_map()
         self.setup_background()
         self.setup_maps()
+
+        self.last_x = self.player_x
+        self.top_score = self.persist[c.SCORE]
+        self.steps = 0
+        self.reward = 0.0
 
         # Set up various sprite groups for collisions and interactions
         self.ground_group = self.setup_collide(c.MAP_GROUND)
@@ -457,13 +463,24 @@ class Level(tools.State):
         self.state_queue.append(state)
         while len(self.state_queue) < 4:
             self.state_queue.append(state)
-        self.reward += self.player.x_vel * 0.01
-        self.reward += self.game_info[c.SCORE] * 0.02
+        self.reward += self.player.x_vel * 0.00001
+        self.reward += (self.player.rect.x - self.last_x) * 0.02
+        self.last_x = self.player.rect.x
+        self.reward += (self.game_info[c.SCORE] - self.top_score) * 0.00001
         self.reward -= 0.01
+        if self.player.dead:
+            self.reward -= 0.1
         # print("#####################")
         self.draw(surface)  # update frame
 
-        return self.state_to_tensor(), self.reward, self.player.dead
+        print(self.steps)
+        if self.steps >= 10000:
+            truncated = True
+            self.player.dead = True
+        else:
+            truncated = False
+            self.steps += 1
+        return self.state_to_tensor(), self.reward, self.player.dead, truncated
 
     def handle_states(self, keys):
         self.update_all_sprites(keys)
