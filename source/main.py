@@ -63,8 +63,8 @@ def create_env(num_frames, frame_skip):
 
 # Define the main function of the script
 def main():
-    num_frames = 6
-    frame_skip = 2
+    num_frames = 4
+    frame_skip = 4
 
     # Create an instance of the Control class from the 'tools' module
     env = create_env(num_frames, frame_skip)

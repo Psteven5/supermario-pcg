@@ -90,6 +90,7 @@ class Level(tools.State):
         self.jump_count = 0
         self.top_score = 0
         self.last_time = 0
+        self.idle = 0
         self.steps = 0
 
         self.death_timeout = 0 if rl else 3000
@@ -114,6 +115,7 @@ class Level(tools.State):
         self.reward = 0.0
         self.prev_x = 110.0
         self.prev_y = 0.0
+        self.idle = 0
         self.jumptimer = 0
 
         # Initialize lists and overhead information
@@ -568,12 +570,17 @@ class Level(tools.State):
         while len(self.state_queue) < self.state_queue.maxlen:
             self.state_queue.append(state)
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        reward = 0.0
-        reward += (self.player.rect.x - self.last_x) * 0.01
+        reward = 0
+        dx = self.player.rect.x - self.last_x
         self.last_x = self.player.rect.x
-        reward -= 0.001
-        if self.player.dead:
-            reward -= 1.0
+        if dx <= 0:
+            self.idle += 1
+        else:
+            self.idle = 0
+        reward = ( dx * 0.01
+                 + 0.01
+                 - min(self.idle, 20) * 0.005
+                 - int(self.player.dead))
         self.draw(surface)  # update frame
         if self.steps >= 10000 // self.frame_skip:
             truncated = True
