@@ -86,9 +86,12 @@ class Level(tools.State):
         self.player = None
 
         self.last_x = 0.0
+        self.best_x = 0.0
+        self.jump_count = 0
         self.top_score = 0
+        self.last_time = 0
         self.steps = 0
-        self.reward = 0.0
+        # self.reward = 0.0
 
         self.death_timeout = 0 if rl else 3000
         self.live_change_on_death = 0 if rl else 1
@@ -113,9 +116,12 @@ class Level(tools.State):
         self.setup_maps()
 
         self.last_x = self.player_x
+        self.best_x = self.player_x
         self.top_score = self.persist[c.SCORE]
+        self.last_time = self.persist[c.CURRENT_TIME]
+        self.jump_count = 0
         self.steps = 0
-        self.reward = 0.0
+        # self.reward = 0.0
 
         # Set up various sprite groups for collisions and interactions
         self.ground_group = self.setup_collide(c.MAP_GROUND)
@@ -457,30 +463,37 @@ class Level(tools.State):
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-
+        if keys[tools.keybinding[c.JUMP]]:
+            self.jump_count += 1
+        else:
+            self.jump_count = 0
+        print(self.jump_count)
         self.handle_states(keys)  # do move and update state
         state = self.get_state()  # get RL state
         self.state_queue.append(state)
-        while len(self.state_queue) < 4:
+        while len(self.state_queue) < self.state_queue.maxlen:
             self.state_queue.append(state)
-        self.reward += self.player.x_vel * 0.00001
-        self.reward += (self.player.rect.x - self.last_x) * 0.02
+        self.best_x = max(self.best_x, self.player.rect.x)
+        # reward = self.player.x_vel * 0.00001
+        reward = self.best_x * 0.002
+        reward += self.jump_count * 0.05
+        # self.reward += self.player.x_vel * 0.00001
+        reward += (self.player.rect.x - self.last_x) * 0.001
         self.last_x = self.player.rect.x
-        self.reward += (self.game_info[c.SCORE] - self.top_score) * 0.00001
-        self.reward -= 0.009
+        reward += (self.game_info[c.SCORE] - self.top_score) * 0.0001
+        reward -= (self.game_info[c.CURRENT_TIME] - self.last_time) * 0.000005
         if self.player.dead:
-            self.reward -= 0.1
+            reward -= 1.0
         # print("#####################")
         self.draw(surface)  # update frame
 
-        print(self.steps)
         if self.steps >= 10000:
             truncated = True
             self.player.dead = True
         else:
             truncated = False
             self.steps += 1
-        return self.state_to_tensor(), self.reward, self.player.dead, truncated
+        return self.state_to_tensor(), reward, self.player.dead, truncated
 
     def handle_states(self, keys):
         self.update_all_sprites(keys)

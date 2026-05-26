@@ -30,13 +30,16 @@ class MarioEncoder(BaseFeaturesExtractor):
             nn.Conv2d(in_features, 32, kernel_size=3, padding=1),
             nn.ReLU(),
 
-            MarioResidualBlock(32),
-            MarioResidualBlock(32),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.ReLU(),
+
+            MarioResidualBlock(64),
+            MarioResidualBlock(64),
 
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
 
-            nn.Linear(32, features_dim),
+            nn.Linear(64, features_dim),
             nn.ReLU(),
         )
 
