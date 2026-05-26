@@ -868,7 +868,7 @@ class Level(tools.State):
         elif self.player.dead:
             self.next = c.LOAD_SCREEN
         else:
-            self.game_info[c.LEVEL_NUM] += 1
+            # self.game_info[c.LEVEL_NUM] += 1
             self.next = c.LOAD_SCREEN
 
     def update_viewport(self):
