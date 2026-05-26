@@ -49,6 +49,7 @@ class Level(tools.State):
         self.death_timer = 0
         self.castle_timer = 0
         self.left_bound = 0
+        self.mario_pos = 0
         
         # Initialize lists and overhead information
         self.moving_score_list = []
@@ -252,6 +253,7 @@ class Level(tools.State):
                     sprite.kill()
     def reset_map(self, offset):        
         # Shift player
+        self.mario_pos += self.player.rect.x
         self.player.rect.x -= offset
 
         # Shift viewpoint
@@ -441,8 +443,9 @@ class Level(tools.State):
         self.player_group = pg.sprite.Group(self.player)
 
     def update(self, surface, keys, current_time):
+        global max_mario_x
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        #print(self.player.rect.x)
+        max_mario_x = self.mario_pos + self.player.rect.x
         self.handle_states(keys)
         self.draw(surface)
     
