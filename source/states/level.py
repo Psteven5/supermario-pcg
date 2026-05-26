@@ -115,7 +115,6 @@ class Level(tools.State):
             chunk_chances['boxes'] = self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk)
             chunk_chances['enemies'] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
             chunk_chances['piranha'] = self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk)
-            print(chunk_chances)
 
             difficulty = int(1 + self.current_chunk / 2)
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)

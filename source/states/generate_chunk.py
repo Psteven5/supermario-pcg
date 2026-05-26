@@ -14,7 +14,7 @@ from .. import constants as c
 
 
 class GenerateChunk():
-    def __init__(self, chunk_size, chances=[], difficulty=1):
+    def __init__(self, chunk_size, chances=dict(), difficulty=1):
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
@@ -25,14 +25,15 @@ class GenerateChunk():
         # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies, 5 - piranha in pipe
         if len(chances) >= 6:
             # Filtering in case a value is not inbetween 0.0 and 1.0
-            filter_chances = [c if 0.0 <= c <= 1.0 else 0.0 for c in chances]
+            for chance in chances:
+                chances[chance] = chances[chance] if 0.0 <= chances[chance] <= 1.0 else 0.0
 
-            self.gaps_chance = filter_chances[0]
-            self.pipestairs_chance = filter_chances[1]
-            self.bricks_chance = filter_chances[2]
-            self.box_chance = filter_chances[3]
-            self.enemies_chance = filter_chances[4]
-            self.piranha_pipe = filter_chances[5]
+            self.gaps_chance = chances['gaps']
+            self.pipestairs_chance = chances['pipestairs']
+            self.bricks_chance = chances['bricks']
+            self.box_chance = chances['boxes']
+            self.enemies_chance = chances['enemies']
+            self.piranha_pipe = chances['piranha']
         else:
             # Default values
             self.gaps_chance = 0.3
