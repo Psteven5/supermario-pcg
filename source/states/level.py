@@ -483,7 +483,7 @@ class Level(tools.State):
         self.handle_states(keys)  # do move and update state
         state = self.get_state()  # get RL state
         self.state_queue.append(state)
-        while len(self.state_queue) < 4:
+        while len(self.state_queue) < self.state_queue.maxlen:
             self.state_queue.append(state)
         
         use_max_x = False
