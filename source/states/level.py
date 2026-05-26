@@ -463,7 +463,7 @@ class Level(tools.State):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         if keys[tools.keybinding[c.JUMP]]:
             self.jump_count = min(self.jump_count+1, 36)
-        else:
+        if self.player.y_vel >= 0.0:
             self.jump_count = 0
         self.handle_states(keys)  # do move and update state
         state = self.get_state()  # get RL state
@@ -472,19 +472,19 @@ class Level(tools.State):
             self.state_queue.append(state)
         self.best_x = max(self.best_x, self.player.rect.x)
         # reward = self.player.x_vel * 0.00001
-        reward = self.best_x * 0.003
+        reward = self.best_x * 0.005
         reward += self.jump_count * 0.05
         # self.reward += self.player.x_vel * 0.00001
         reward += (self.player.rect.x - self.last_x) * 0.001
         self.last_x = self.player.rect.x
         reward += (self.game_info[c.SCORE] - self.top_score) * 0.0001
-        reward -= (self.game_info[c.CURRENT_TIME] - self.last_time) * 0.000005
+        reward -= (self.game_info[c.CURRENT_TIME] - self.last_time) * 0.00001
         if self.player.dead:
             reward -= 1.0
         # print("#####################")
         self.draw(surface)  # update frame
 
-        # print(reward)
+        print(reward)
         if self.steps >= 10000:
             truncated = True
             self.player.dead = True
