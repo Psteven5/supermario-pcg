@@ -427,26 +427,25 @@ class Level(tools.State):
         num_frames = len(self.state_queue)
         height = len(self.state_queue[0])
         width = len(self.state_queue[0][0])
-        state_T = torch.zeros((7 * num_frames, height, width), dtype=torch.float32)
+        state_np = np.zeros((num_frames * 7, height, width), dtype=np.float32)
 
-        for i in range(num_frames):
-            for y in range(height):
-                for x in range(width):
-                    entity: Entity = self.state_queue[i][y][x]
-
+        for i, frame in enumerate(self.state_queue):
+            offset = i * 7
+            for y, row in enumerate(frame):
+                for x, entity in enumerate(row):
                     # If the grid cell has an entity, map its properties to the channels
                     if entity is not None:
-                        state_T[0 + i * 7, y, x] = entity.x / 860
-                        state_T[1 + i * 7, y, x] = entity.y / 645
-                        state_T[2 + i * 7, y, x] = entity.w / 43
-                        state_T[3 + i * 7, y, x] = entity.h / 86
-                        state_T[4 + i * 7, y, x] = entity.dx / 20
-                        state_T[5 + i * 7, y, x] = entity.dy / 20
-                        state_T[6 + i * 7, y, x] = entity.ty.value / 5
+                        state_np[offset, y, x] = entity.x / 860.0
+                        state_np[offset + 1, y, x] = entity.y / 645.0
+                        state_np[offset + 2, y, x] = entity.w / 43.0
+                        state_np[offset + 3, y, x] = entity.h / 86.0
+                        state_np[offset + 4, y, x] = entity.dx / 20.0
+                        state_np[offset + 5, y, x] = entity.dy / 20.0
+                        state_np[offset + 6, y, x] = entity.ty.value / 5.0
 
-        state_T.clamp(-1.0, 1.0)
+        np.clip(state_np, -1.0, 1.0, out=state_np)
 
-        return state_T
+        return torch.from_numpy(state_np)
 
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
