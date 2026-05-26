@@ -84,6 +84,8 @@ class Level(tools.State):
     def __init__(self, rl: bool = False, num_frames=4):
         tools.State.__init__(self)
         self.player = None
+        self.max_x = 0.0
+        self.reward = 0.0
 
         self.death_timeout = 0 if rl else 3000
         self.live_change_on_death = 0 if rl else 1
@@ -455,11 +457,13 @@ class Level(tools.State):
         self.state_queue.append(state)
         while len(self.state_queue) < 4:
             self.state_queue.append(state)
-        reward = self.player.rect.x
+        self.reward += self.player.x_vel * 0.01
+        self.reward += self.game_info[c.SCORE] * 0.02
+        self.reward -= 0.01
         # print("#####################")
         self.draw(surface)  # update frame
 
-        return self.state_to_tensor(), reward, self.player.dead
+        return self.state_to_tensor(), self.reward, self.player.dead
 
     def handle_states(self, keys):
         self.update_all_sprites(keys)

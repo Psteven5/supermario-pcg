@@ -66,7 +66,7 @@ def main():
         policy=MarioPPOWrapper,
         env=game,
         policy_kwargs=policy_kwargs,
-        learning_rate=0.0003,
+        learning_rate=1e-4,
         n_steps=2_048,
         batch_size=64,
         n_epochs=10,
