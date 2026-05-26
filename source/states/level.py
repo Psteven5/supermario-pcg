@@ -547,11 +547,7 @@ class Level(tools.State):
     def update_alex(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         self.draw(surface)  # update frame
-        # select reward function
-        # pieter reward
         reward = self.calc_reward_alex(surface, keys, current_time)
-        # alex reward
-        # reward = self.calc_reward_alex(surface, keys, current_time)
         
         if self.steps >= 10000:
             truncated = True
@@ -592,8 +588,9 @@ class Level(tools.State):
         return self.state_to_tensor(), reward, self.player.dead, truncated
 
     def update(self, surface, keys, current_time):
-        return self.update_pieter(surface, keys, current_time)
-
+        # return self.update_pieter(surface, keys, current_time)
+        return self.update_alex(surface, keys, current_time)
+    
     def handle_states(self, keys):
         self.update_all_sprites(keys)
 
