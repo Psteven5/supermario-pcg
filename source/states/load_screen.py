@@ -91,7 +91,7 @@ class GameOver(LoadScreen):
 class TimeOut(LoadScreen):
     def __init__(self):
         super().__init__()
-        self.time_list = [2400, 2600, 2635]
+        self.time_list = [0, 0, 0]
 
     def set_next_state(self):
         # Determine the next state after TimeOut based on remaining lives

@@ -89,10 +89,10 @@ class Control(gym.Env):
         super().__init__()
 
         self.observation_space = spaces.Box(
-            low=-860,
-            high=860,
+            low=-1.0,
+            high=1.0,
             shape=(num_features * num_frames, height, width),
-            dtype=np.int16,
+            dtype=np.float32,
         )
 
         self.action_space = spaces.Discrete(num_actions)

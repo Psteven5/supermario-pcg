@@ -72,6 +72,7 @@ def main():
         n_epochs=10,
         gamma=0.99,
         verbose=1,
+        ent_coef=0.02,
     )
 
     model.learn(total_timesteps=1_000_000)

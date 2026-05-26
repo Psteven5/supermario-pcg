@@ -427,7 +427,7 @@ class Level(tools.State):
         num_frames = len(self.state_queue)
         height = len(self.state_queue[0])
         width = len(self.state_queue[0][0])
-        state_T = torch.zeros((7 * num_frames, height, width), dtype=torch.int16)
+        state_T = torch.zeros((7 * num_frames, height, width), dtype=torch.float32)
 
         for i in range(num_frames):
             for y in range(height):
@@ -436,16 +436,15 @@ class Level(tools.State):
 
                     # If the grid cell has an entity, map its properties to the channels
                     if entity is not None:
-                        state_T[0 + i * 7, y, x] = entity.x
-                        state_T[1 + i * 7, y, x] = entity.y
-                        state_T[2 + i * 7, y, x] = entity.w
-                        state_T[3 + i * 7, y, x] = entity.h
-                        state_T[4 + i * 7, y, x] = entity.dx
-                        state_T[5 + i * 7, y, x] = entity.dy
-                        state_T[6 + i * 7, y, x] = entity.ty.value
+                        state_T[0 + i * 7, y, x] = entity.x / 860
+                        state_T[1 + i * 7, y, x] = entity.y / 645
+                        state_T[2 + i * 7, y, x] = entity.w / 43
+                        state_T[3 + i * 7, y, x] = entity.h / 86
+                        state_T[4 + i * 7, y, x] = entity.dx / 20
+                        state_T[5 + i * 7, y, x] = entity.dy / 20
+                        state_T[6 + i * 7, y, x] = entity.ty.value / 5
 
-        # state_T / 860
-        state_T.clamp(-860, 860)
+        state_T.clamp(-1.0, 1.0)
 
         return state_T
 
