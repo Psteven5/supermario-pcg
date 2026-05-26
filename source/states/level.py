@@ -81,7 +81,7 @@ class Entity:
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self, rl: bool = False, num_frames=4):
+    def __init__(self, rl, num_frames, frame_skip):
         tools.State.__init__(self)
         self.player = None
 
@@ -96,6 +96,7 @@ class Level(tools.State):
         self.live_change_on_death = 0 if rl else 1
 
         self.state_queue = deque(maxlen=num_frames)
+        self.frame_skip = frame_skip
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
@@ -540,40 +541,13 @@ class Level(tools.State):
         self.max_x = max(self.max_x, self.player.rect.x) # update max x
         
         return self.reward
-
-    def calc_reward_pieter(self, surface, keys, current_time):
-        if keys[tools.keybinding[c.JUMP]]:
-            self.jump_count = min(self.jump_count+1, 36)
-        if self.player.y_vel >= 0.0:
-            self.jump_count = 0
-        self.handle_states(keys)  # do move and update state
-        state = self.get_state()  # get RL state
-        self.state_queue.append(state)
-        while len(self.state_queue) < self.state_queue.maxlen:
-            self.state_queue.append(state)
-        self.best_x = max(self.best_x, self.player.rect.x)
-        # reward = self.player.x_vel * 0.00001
-        reward = self.best_x * 0.005
-        reward += self.jump_count * 0.05
-        # self.reward += self.player.x_vel * 0.00001
-        reward += (self.player.rect.x - self.last_x) * 0.001
-        self.last_x = self.player.rect.x
-        reward += (self.game_info[c.SCORE] - self.top_score) * 0.0001
-        reward -= (self.game_info[c.CURRENT_TIME] - self.last_time) * 0.00001
-        if self.player.dead:
-            reward -= 1.0
-        # print("#####################")
-        
-        print(reward)
-        
-        return reward
-
-    def update(self, surface, keys, current_time):
+    
+    def update_alex(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         self.draw(surface)  # update frame
         # select reward function
         # pieter reward
-        reward = self.calc_reward_pieter(surface, keys, current_time)
+        reward = self.calc_reward_alex(surface, keys, current_time)
         # alex reward
         # reward = self.calc_reward_alex(surface, keys, current_time)
         
@@ -585,6 +559,33 @@ class Level(tools.State):
             self.steps += 1
 
         return self.state_to_tensor(), reward, self.player.dead, truncated
+    
+    def update_pieter(self, surface, keys, current_time):
+        for _ in range(self.frame_skip):
+            self.handle_states(keys)  # do move and update state
+        state = self.get_state()  # get RL state
+        self.state_queue.append(state)
+        while len(self.state_queue) < self.state_queue.maxlen:
+            self.state_queue.append(state)
+        self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+        reward = 0.0
+        reward += (self.player.rect.x - self.last_x) * 0.01
+        self.last_x = self.player.rect.x
+        reward -= 0.001
+        if self.player.dead:
+            reward -= 1.0
+        self.draw(surface)  # update frame
+        if self.steps >= 10000 // self.frame_skip:
+            truncated = True
+            self.player.dead = True
+        else:
+            truncated = False
+            self.steps += 1
+        print(reward)
+        return self.state_to_tensor(), reward, self.player.dead, truncated
+
+    def update(self, surface, keys, current_time):
+        return self.update_pieter(surface, keys, current_time)
 
     def handle_states(self, keys):
         self.update_all_sprites(keys)

@@ -35,7 +35,7 @@ from .states import level, load_screen, main_menu
 from .states.ppo import MarioEncoder, MarioPPOWrapper
 
 
-def create_env(num_frames=4):
+def create_env(num_frames, frame_skip):
     # Create an instance of the Control class from the 'tools' module
     game = tools.Control(num_frames=num_frames)
 
@@ -46,7 +46,7 @@ def create_env(num_frames=4):
         c.MAIN_MENU: main_menu.Menu(),
         c.LOAD_SCREEN: load_screen.LoadScreen(rl),
         # c.LEVEL: level.Level(),
-        c.LEVEL: level.Level(rl, num_frames=num_frames),
+        c.LEVEL: level.Level(rl, num_frames, frame_skip),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut(),
     }
@@ -63,9 +63,12 @@ def create_env(num_frames=4):
 
 # Define the main function of the script
 def main():
+    num_frames = 6
+    frame_skip = 2
+
     # Create an instance of the Control class from the 'tools' module
-    env = create_env()
-    eval_env = create_env()
+    env = create_env(num_frames, frame_skip)
+    eval_env = create_env(num_frames, frame_skip)
     eval_callback = EvalCallback(
         eval_env,
         eval_freq=10000,
@@ -74,7 +77,6 @@ def main():
         n_eval_episodes=5,
         deterministic=True,
     )
-
 
     policy_kwargs = dict(
         features_extractor_class=MarioEncoder,
@@ -85,13 +87,13 @@ def main():
         policy=MarioPPOWrapper,
         env=env,
         policy_kwargs=policy_kwargs,
-        learning_rate=1e-4,
-        n_steps=2_048,
+        learning_rate=1e-5,
+        n_steps=2_048 // frame_skip,
         batch_size=64,
-        n_epochs=3,
+        n_epochs=2,
         gamma=0.99,
         verbose=1,
-        ent_coef=0.03,
+        ent_coef=0.04,
     )
 
     model.learn(total_timesteps=1_000_000, callback=eval_callback)

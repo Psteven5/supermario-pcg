@@ -25,6 +25,8 @@ class MarioEncoder(BaseFeaturesExtractor):
         super().__init__(observation_space, features_dim)
 
         in_features = observation_space.shape[0]
+        height = observation_space.shape[1]
+        width = observation_space.shape[2]
         
         self.net = nn.Sequential(
             nn.Conv2d(in_features, 32, kernel_size=3, padding=1),
@@ -36,10 +38,9 @@ class MarioEncoder(BaseFeaturesExtractor):
             MarioResidualBlock(64),
             MarioResidualBlock(64),
 
-            nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
 
-            nn.Linear(64, features_dim),
+            nn.Linear(64 * width * height, features_dim),
             nn.ReLU(),
         )
 
