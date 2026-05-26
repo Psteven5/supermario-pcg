@@ -22,15 +22,63 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-__author__ = 'm0rniac'
+__author__ = "m0rniac"
 
-import os
 import json
+import os
+from collections import deque
+from dataclasses import dataclass
+from enum import Enum, auto
+from pprint import pprint
+
+# RL agent import
+# import gymnasium as gym
+import numpy as np
 import pygame as pg
-from .. import setup, tools
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.distributions import Categorical
+
 from .. import constants as c
-from . import generate_chunk
+from .. import setup, tools
+from ..components import box, brick, coin, enemy, info, player, powerup, stuff
 from ..components import info, stuff, player, brick, box, enemy, powerup, coin, ground, step
+from .helper import evaluate
+from . import generate_chunk
+
+
+class MacroMove(Enum):
+    LEFT = 0
+    RIGHT = auto()
+    ACTION = auto()
+    JUMP = auto()
+    LEFT_ACTION = auto()
+    RIGHT_ACTION = auto()
+    LEFT_JUMP = auto()
+    RIGHT_JUMP = auto()
+    LEFT_ACTION_JUMP = auto()
+    RIGHT_ACTION_JUMP = auto()
+
+
+class EntityType(Enum):
+    PLAYER = 0
+    GROUND = auto()
+    BRICK = auto()
+    BOX = auto()
+    ENEMY = auto()
+    POWERUP = auto()
+
+
+@dataclass
+class Entity:
+    x: int
+    y: int
+    w: int
+    h: int
+    dx: int
+    dy: int
+    ty: EntityType
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
@@ -57,13 +105,13 @@ class Level(tools.State):
         
         # Load map data and set up background
         self.chunk_size = c.CHUNK_SIZE
-        chunk_chances = {'gaps': c.CHANCE_GAP,
-                         'pipestairs': c.CHANCE_PIPESTAIRS,
-                         'bricks': c.CHANCE_BRICKS,
-                         'boxes': c.CHANCE_BOXES,
-                         'enemies': c.CHANCE_ENEMIES,
-                         'piranha': c.CHANCE_PIRANHA,
-                         'chunk_bricks': c.CHANCE_BRICKS_CHUNK}
+        chunk_chances = {"gaps": c.CHANCE_GAP,
+                         "pipestairs": c.CHANCE_PIPESTAIRS,
+                         "bricks": c.CHANCE_BRICKS,
+                         "boxes": c.CHANCE_BOXES,
+                         "enemies": c.CHANCE_ENEMIES,
+                         "piranha": c.CHANCE_PIRANHA,
+                         "chunk_bricks": c.CHANCE_BRICKS_CHUNK}
         generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
         generator.generate_chunk(first=True)
         self.load_map()
@@ -86,8 +134,8 @@ class Level(tools.State):
     # Function to load the map data from a JSON file
     def load_map(self):
         # TODO: change this function and use it in load_next_chunk?
-        map_file = 'chunk.json'
-        file_path = os.path.join('source', 'data', 'maps', map_file)
+        map_file = "chunk.json"
+        file_path = os.path.join("source", "data", "maps", map_file)
         f = open(file_path)
         self.map_data = json.load(f)
         f.close()
@@ -110,13 +158,13 @@ class Level(tools.State):
             chunk_chances = dict()
             k = 0.5 # how quickly we increase the chances
 
-            chunk_chances['gaps'] = self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk)
-            chunk_chances['pipestairs'] = self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk)
-            chunk_chances['bricks'] = self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk)
-            chunk_chances['boxes'] = self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk)
-            chunk_chances['enemies'] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
-            chunk_chances['piranha'] = self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk)
-            chunk_chances['chunk_bricks'] = self.generate_chunk_chance(c.END_CHANCE_BRICKS_CHUNK, c.CHANCE_BRICKS_CHUNK, k, self.current_chunk)
+            chunk_chances["gaps"] = self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk)
+            chunk_chances["pipestairs"] = self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk)
+            chunk_chances["bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk)
+            chunk_chances["boxes"] = self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk)
+            chunk_chances["enemies"] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
+            chunk_chances["piranha"] = self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk)
+            chunk_chances["chunk_bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS_CHUNK, c.CHANCE_BRICKS_CHUNK, k, self.current_chunk)
 
             difficulty = int(1 + self.current_chunk / 2)
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
@@ -132,25 +180,25 @@ class Level(tools.State):
     def load_next_chunk(self, ):
         # TODO: use load_map to change self.map_data to new level from generated new json file?
         offset_x = self.chunk_size
-        map_file = 'chunk.json'
-        file_path = os.path.join('source', 'data', 'maps', map_file)
+        map_file = "chunk.json"
+        file_path = os.path.join("source", "data", "maps", map_file)
         f = open(file_path)
         new_map_data = json.load(f)
         f.close()
         for data in new_map_data:
             if isinstance(new_map_data[data], list):
                 for item in new_map_data[data]:
-                    if isinstance(item, dict) and 'x' in item:
-                        item['x'] += offset_x
-                    elif isinstance(item, dict) and 'start_x' in item:
-                        item['start_x'] += offset_x
-                        item['end_x'] += offset_x
+                    if isinstance(item, dict) and "x" in item:
+                        item["x"] += offset_x
+                    elif isinstance(item, dict) and "start_x" in item:
+                        item["start_x"] += offset_x
+                        item["end_x"] += offset_x
                     elif isinstance(item, dict):
                         for key in item:
                             if isinstance(item[key], list):
                                 for enemy_item in item[key]:
-                                    if isinstance(enemy_item, dict) and 'x' in enemy_item:
-                                        enemy_item['x'] += offset_x
+                                    if isinstance(enemy_item, dict) and "x" in enemy_item:
+                                        enemy_item["x"] += offset_x
         self.add_chunk_to_map_data(new_map_data)
 
     def add_chunk_to_map_data(self, map_data):
@@ -159,21 +207,21 @@ class Level(tools.State):
 
         if c.MAP_GROUND in map_data:
             for item in map_data[c.MAP_GROUND]:
-                collider = stuff.Collider(item['x'], item['y'], item['width'], item['height'], c.MAP_GROUND)
+                collider = stuff.Collider(item["x"], item["y"], item["width"], item["height"], c.MAP_GROUND)
                 collider.image = pg.Surface((collider.rect.width, collider.rect.height))
                 collider.image.fill((0, 0, 0))
                 self.ground_group.add(collider)
-                for y in range(item['y'], item['y'] + item['height'], 43):
-                    for x in range(item['x'], item['x'] + item['width'], 43):
+                for y in range(item["y"], item["y"] + item["height"], 43):
+                    for x in range(item["x"], item["x"] + item["width"], 43):
                         self.ground_group.add(ground.Ground(x, y))              
         
         if c.MAP_PIPE in map_data:
             for item in map_data[c.MAP_PIPE]:
-                self.pipe_group.add(stuff.Pipe(item['x'], item['y'], item['width'], item['height'], item['type']))
+                self.pipe_group.add(stuff.Pipe(item["x"], item["y"], item["width"], item["height"], item["type"]))
                 
         if c.MAP_COIN in map_data:
             for item in map_data[c.MAP_COIN]:
-                self.static_coin_group.add(coin.StaticCoin(item['x'], item['y']))
+                self.static_coin_group.add(coin.StaticCoin(item["x"], item["y"]))
 
         if c.MAP_BRICK in map_data:
             for item in map_data[c.MAP_BRICK]:
@@ -181,10 +229,10 @@ class Level(tools.State):
         
         if c.MAP_BOX in map_data:
             for item in map_data[c.MAP_BOX]:
-                if item['type'] == c.TYPE_COIN:
-                    self.box_group.add(box.Box(item['x'], item['y'], item['type'], self.coin_group))
+                if item["type"] == c.TYPE_COIN:
+                    self.box_group.add(box.Box(item["x"], item["y"], item["type"], self.coin_group))
                 else:
-                    self.box_group.add(box.Box(item['x'], item['y'], item['type'], self.powerup_group))
+                    self.box_group.add(box.Box(item["x"], item["y"], item["type"], self.powerup_group))
         
         if c.MAP_ENEMY in map_data:
             for data in map_data[c.MAP_ENEMY]:
@@ -204,27 +252,27 @@ class Level(tools.State):
                     map_index = data[c.MAP_INDEX]
                 else:
                     map_index = 0
-                self.checkpoint_group.add(stuff.Checkpoint(data['x'], data['y'], data['width'], 
-                    data['height'], data['type'], enemy_groupid, map_index))
+                self.checkpoint_group.add(stuff.Checkpoint(data["x"], data["y"], data["width"], 
+                    data["height"], data["type"], enemy_groupid, map_index))
         
         if c.MAP_FLAGPOLE in map_data:
             for item in map_data[c.MAP_FLAGPOLE]:
-                if item['type'] == c.FLAGPOLE_TYPE_FLAG:
-                    sprite = stuff.Flag(item['x'], item['y'])
+                if item["type"] == c.FLAGPOLE_TYPE_FLAG:
+                    sprite = stuff.Flag(item["x"], item["y"])
                     self.flag = sprite
-                elif item['type'] == c.FLAGPOLE_TYPE_POLE:
-                    sprite = stuff.Pole(item['x'], item['y'])
+                elif item["type"] == c.FLAGPOLE_TYPE_POLE:
+                    sprite = stuff.Pole(item["x"], item["y"])
                 else:
-                    sprite = stuff.PoleTop(item['x'], item['y'])
+                    sprite = stuff.PoleTop(item["x"], item["y"])
                 self.flagpole_group.add(sprite)
         
         if c.MAP_STEP in map_data:
             for item in map_data[c.MAP_STEP]:
-                collider = stuff.Collider(item['x'], item['y'], item['width'], item['height'], c.MAP_STEP)
+                collider = stuff.Collider(item["x"], item["y"], item["width"], item["height"], c.MAP_STEP)
                 collider.image = pg.Surface((collider.rect.width, collider.rect.height))   
                 self.step_group.add(collider)
-                for y in range(item['y'], item['y'] + item['height'], 43):
-                    for x in range(item['x'], item['x'] + item['width'], 43):
+                for y in range(item["y"], item["y"] + item["height"], 43):
+                    for x in range(item["x"], item["x"] + item["width"], 43):
                         self.step_group.add(step.Step(x, y)) 
 
         if c.MAP_SLIDER in map_data:
@@ -233,8 +281,8 @@ class Level(tools.State):
                     vel = item[c.VELOCITY]
                 else:
                     vel = 1
-                self.slider_group.add(stuff.Slider(item['x'], item['y'], item['num'],
-                    item['direction'], item['range_start'], item['range_end'], vel))
+                self.slider_group.add(stuff.Slider(item["x"], item["y"], item["num"],
+                    item["direction"], item["range_start"], item["range_end"], vel))
         
         self.ground_step_pipe_group.add(
             self.pipe_group,
@@ -297,7 +345,7 @@ class Level(tools.State):
         self.map_list = []
         if c.MAP_MAPS in self.map_data:
             for data in self.map_data[c.MAP_MAPS]:
-                self.map_list.append((data['start_x'], data['end_x'], data['player_x'], data['player_y']))
+                self.map_list.append((data["start_x"], data["end_x"], data["player_x"], data["player_y"]))
             self.start_x, self.end_x, self.player_x, self.player_y = self.map_list[0]
         else: #TODO not used???
             self.start_x = 0
@@ -324,18 +372,18 @@ class Level(tools.State):
         group = pg.sprite.Group()
         if name in self.map_data:
             for data in self.map_data[name]:
-                collider = stuff.Collider(data['x'], data['y'], data['width'], data['height'], name)
+                collider = stuff.Collider(data["x"], data["y"], data["width"], data["height"], name)
                 collider.image = pg.Surface((collider.rect.width, collider.rect.height))
                 collider.image.fill((0, 0, 0))
                 group.add(collider)
                 # green = ground, brown = steps
                 if name == c.MAP_GROUND:
-                    for y in range(data['y'], data['y'] + data['height'], 43):
-                        for x in range(data['x'], data['x'] + data['width'], 43):
+                    for y in range(data["y"], data["y"] + data["height"], 43):
+                        for x in range(data["x"], data["x"] + data["width"], 43):
                             group.add(ground.Ground(x,y))
                 else:
-                    for y in range(data['y'], data['y'] + data['height'], 43):
-                        for x in range(data['x'], data['x'] + data['width'], 43):
+                    for y in range(data["y"], data["y"] + data["height"], 43):
+                        for x in range(data["x"], data["x"] + data["width"], 43):
                             group.add(step.Step(x,y))
         return group
 
@@ -344,8 +392,8 @@ class Level(tools.State):
         self.pipe_group = pg.sprite.Group()
         if c.MAP_PIPE in self.map_data:
             for data in self.map_data[c.MAP_PIPE]:
-                self.pipe_group.add(stuff.Pipe(data['x'], data['y'],
-                    data['width'], data['height'], data['type']))
+                self.pipe_group.add(stuff.Pipe(data["x"], data["y"],
+                    data["width"], data["height"], data["type"]))
 
     # Function to set up slider objects on the map
     def setup_slider(self):
@@ -356,14 +404,14 @@ class Level(tools.State):
                     vel = data[c.VELOCITY]
                 else:
                     vel = 1
-                self.slider_group.add(stuff.Slider(data['x'], data['y'], data['num'],
-                    data['direction'], data['range_start'], data['range_end'], vel))
+                self.slider_group.add(stuff.Slider(data["x"], data["y"], data["num"],
+                    data["direction"], data["range_start"], data["range_end"], vel))
 
     def setup_static_coin(self):
         self.static_coin_group = pg.sprite.Group()
         if c.MAP_COIN in self.map_data:
             for data in self.map_data[c.MAP_COIN]:
-                self.static_coin_group.add(coin.StaticCoin(data['x'], data['y']))
+                self.static_coin_group.add(coin.StaticCoin(data["x"], data["y"]))
 
     def setup_brick_and_box(self):
         self.coin_group = pg.sprite.Group()
@@ -378,10 +426,10 @@ class Level(tools.State):
         self.box_group = pg.sprite.Group()
         if c.MAP_BOX in self.map_data:
             for data in self.map_data[c.MAP_BOX]:
-                if data['type'] == c.TYPE_COIN:
-                    self.box_group.add(box.Box(data['x'], data['y'], data['type'], self.coin_group))
+                if data["type"] == c.TYPE_COIN:
+                    self.box_group.add(box.Box(data["x"], data["y"], data["type"], self.coin_group))
                 else:
-                    self.box_group.add(box.Box(data['x'], data['y'], data['type'], self.powerup_group))
+                    self.box_group.add(box.Box(data["x"], data["y"], data["type"], self.powerup_group))
     
     # Function to set up the player object
     def setup_player(self):
@@ -417,42 +465,179 @@ class Level(tools.State):
                 map_index = data[c.MAP_INDEX]
             else:
                 map_index = 0
-            self.checkpoint_group.add(stuff.Checkpoint(data['x'], data['y'], data['width'], 
-                data['height'], data['type'], enemy_groupid, map_index))
+            self.checkpoint_group.add(stuff.Checkpoint(data["x"], data["y"], data["width"], 
+                data["height"], data["type"], enemy_groupid, map_index))
     
     def setup_flagpole(self):
         self.flagpole_group = pg.sprite.Group()
         if c.MAP_FLAGPOLE in self.map_data:
             for data in self.map_data[c.MAP_FLAGPOLE]:
-                if data['type'] == c.FLAGPOLE_TYPE_FLAG:
-                    sprite = stuff.Flag(data['x'], data['y'])
+                if data["type"] == c.FLAGPOLE_TYPE_FLAG:
+                    sprite = stuff.Flag(data["x"], data["y"])
                     self.flag = sprite
-                elif data['type'] == c.FLAGPOLE_TYPE_POLE:
-                    sprite = stuff.Pole(data['x'], data['y'])
+                elif data["type"] == c.FLAGPOLE_TYPE_POLE:
+                    sprite = stuff.Pole(data["x"], data["y"])
                 else:
-                    sprite = stuff.PoleTop(data['x'], data['y'])
+                    sprite = stuff.PoleTop(data["x"], data["y"])
                 self.flagpole_group.add(sprite)
-        
-        
+
     def setup_sprite_groups(self):
         self.dying_group = pg.sprite.Group()
         self.enemy_group = pg.sprite.Group()
         self.shell_group = pg.sprite.Group()
-        
-        self.ground_step_pipe_group = pg.sprite.Group(self.ground_group,
-                        self.pipe_group, self.step_group, self.slider_group)
+    
+        self.ground_step_pipe_group = pg.sprite.Group(
+            self.ground_group, self.pipe_group, self.step_group, self.slider_group
+        )
         self.player_group = pg.sprite.Group(self.player)
+
+# RL PART
+    def get_relevant_from_group(self, group, entity_type):
+        stuffs = []
+        for stuff in group:
+            dx = stuff.rect.x - self.viewport.x
+            if dx < -30 or dx > 790:
+                continue
+            stuffs.append(
+                Entity(
+                    x=stuff.rect.centerx + 21 - self.player.rect.centerx,
+                    y=stuff.rect.centery + 21 - self.player.rect.bottom,
+                    w=stuff.rect.w,
+                    h=stuff.rect.h,
+                    dx=stuff.x_vel if hasattr(stuff, "x_vel") else 0,
+                    dy=stuff.y_vel if hasattr(stuff, "y_vel") else 0,
+                    ty=entity_type,
+                )
+            )
+        return stuffs
+
+    def get_relevant_from_large_group(self, group, entity_type=EntityType.GROUND):
+        largers = []
+        for large in group:
+            dlx = large.rect.x - self.viewport.x
+            drx = large.rect.x + large.rect.w - self.viewport.x
+            if drx < -30 or dlx > 790:
+                continue
+            for x in range(large.rect.x, large.rect.x + large.rect.w, 43):
+                dx = x - self.viewport.x
+                if dx < -30:
+                    continue
+                if dx > 790:
+                    break
+                for y in range(large.rect.y, large.rect.y + large.rect.h, 43):
+                    largers.append(
+                        Entity(
+                            x=x + 21 - self.player.rect.centerx,
+                            y=y + 21 - self.player.rect.bottom,
+                            w=43,
+                            h=43,
+                            dx=0,
+                            dy=0,
+                            ty=entity_type,
+                        )
+                    )
+            # largers.append(Entity(
+            #     x=large.rect.centerx - self.player.rect.centerx,
+            #     y=large.rect.centery - self.player.rect.bottom,
+            #     w=large.rect.w,
+            #     h=large.rect.h,
+            #     dx=large.x_vel if hasattr(large, 'x_vel') else 0,
+            #     dy=large.y_vel if hasattr(large, 'y_vel') else 0,
+            #     ty=entity_type,
+            # ))
+        return largers
+
+    def get_ground(self):
+        return (
+            self.get_relevant_from_large_group(self.ground_group)
+            + self.get_relevant_from_large_group(self.pipe_group)
+            + self.get_relevant_from_large_group(self.step_group)
+        )
+
+    def get_enemies(self):
+        return self.get_relevant_from_group(
+            self.enemy_group, EntityType.ENEMY
+        ) + self.get_relevant_from_group(self.shell_group, EntityType.ENEMY)
+
+    def get_state(self):
+        # 20x15 grid
+        state = [[None] * 20 for _ in range(15)]
+
+        # make sure grid aligns with the entities
+        grid_x = (self.viewport.x + 7) // 43 * 43
+        grid_y = (self.viewport.y) // 43 * 43
+
+        entities = [
+            Entity(
+                0,
+                0,
+                self.player.rect.w,
+                self.player.rect.h,
+                self.player.x_vel,
+                self.player.y_vel,
+                EntityType.PLAYER,
+            )
+        ]
+        entities += self.get_ground()
+        entities += self.get_relevant_from_group(self.brick_group, EntityType.BRICK)
+        entities += self.get_relevant_from_group(self.box_group, EntityType.BOX)
+        entities += self.get_enemies()
+        entities += self.get_relevant_from_group(self.powerup_group, EntityType.POWERUP)
+
+        # put the entities into the state grid
+        for entity in entities:
+            entity_y = (entity.y + (self.player.rect.bottom - grid_y)) // 43
+            entity_x = (entity.x + (self.player.rect.centerx - grid_x)) // 43
+            if entity_y < 0 or entity_y >= 15 or entity_x < 0 or entity_x >= 20:
+                continue
+            state[entity_y][entity_x] = entity
+
+        return state
+
+    def state_to_tensor(self) -> torch.Tensor:
+        num_frames = len(self.state_queue)
+        height = len(self.state_queue[0])
+        width = len(self.state_queue[0][0])
+        state_np = np.zeros((num_frames * 7, height, width), dtype=np.float32)
+
+        for i, frame in enumerate(self.state_queue):
+            offset = i * 7
+            for y, row in enumerate(frame):
+                for x, entity in enumerate(row):
+                    # If the grid cell has an entity, map its properties to the channels
+                    if entity is not None:
+                        state_np[offset, y, x] = entity.x / 860.0
+                        state_np[offset + 1, y, x] = entity.y / 645.0
+                        state_np[offset + 2, y, x] = entity.w / 43.0
+                        state_np[offset + 3, y, x] = entity.h / 86.0
+                        state_np[offset + 4, y, x] = entity.dx / 20.0
+                        state_np[offset + 5, y, x] = entity.dy / 20.0
+                        state_np[offset + 6, y, x] = entity.ty.value / 5.0
+
+        np.clip(state_np, -1.0, 1.0, out=state_np)
+
+        return torch.from_numpy(state_np)
 
     def update(self, surface, keys, current_time):
         global max_mario_x
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+        
         max_mario_x = self.mario_pos + self.player.rect.x
-        self.handle_states(keys)
+        self.handle_states(keys)  # do move and update state
+        # RL PART
+        # state = self.get_state()  # get RL state
+        # self.state_queue.append(state)
+        # while len(self.state_queue) < 4:
+        #     self.state_queue.append(state)
+        # self.reward += self.player.x_vel * 0.01
+        # self.reward += self.game_info[c.SCORE] * 0.02
+        # self.reward -= 0.01
+        # print("#####################")
         self.draw(surface)
-    
+
     def handle_states(self, keys):
         self.update_all_sprites(keys)
-    
+
     def update_all_sprites(self, keys):
         if self.player.dead:
             self.player.update(keys, self.game_info, self.powerup_group)
@@ -494,21 +679,26 @@ class Level(tools.State):
             self.overhead_info.update(self.game_info, self.player)
             for score in self.moving_score_list:
                 score.update(self.moving_score_list)
-    
+
     def check_checkpoints(self):
         checkpoint = pg.sprite.spritecollideany(self.player, self.checkpoint_group)
-        
+
         if checkpoint:
             if checkpoint.type == c.CHECKPOINT_TYPE_ENEMY:
                 index = checkpoint.enemy_groupid #% len(self.enemy_group_list)
-                #print("index: ", index)
+                #print('index: ', index)
                 group = self.enemy_group_list[index]
-                #print("group: ", group)
+                #print('group: ', group)
                 self.enemy_group.add(group)
-            elif (checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and
-                    self.player.y_vel < 0):
-                mushroom_box = box.Box(checkpoint.rect.x, checkpoint.rect.bottom - 40,
-                                c.TYPE_LIFEMUSHROOM, self.powerup_group)
+            elif (
+                checkpoint.type == c.CHECKPOINT_TYPE_MUSHROOM and self.player.y_vel < 0
+            ):
+                mushroom_box = box.Box(
+                    checkpoint.rect.x,
+                    checkpoint.rect.bottom - 40,
+                    c.TYPE_LIFEMUSHROOM, 
+                    self.powerup_group,
+                )
                 mushroom_box.start_bump(self.moving_score_list)
                 self.box_group.add(mushroom_box)
                 self.player.y_vel = 7
@@ -526,15 +716,19 @@ class Level(tools.State):
 
     def update_flag_score(self):
         base_y = c.GROUND_HEIGHT - 80
-        
-        y_score_list = [(base_y, 100), (base_y-120, 400),
-                    (base_y-200, 800), (base_y-320, 2000),
-                    (0, 5000)]
+
+        y_score_list = [
+            (base_y, 100),
+            (base_y-120, 400),
+            (base_y-200, 800),
+            (base_y-320, 2000),
+            (0, 5000),
+        ]
         for y, score in y_score_list:
             if self.player.rect.y > y:
                 self.update_score(score, self.flag)
                 break
-        
+
     def update_player_position(self):
         if self.player.state == c.UP_OUT_PIPE:
             return
@@ -544,13 +738,15 @@ class Level(tools.State):
             self.player.rect.x = self.left_bound
 
         self.check_player_x_collisions()
-        
+
         if not self.player.dead:
             self.player.rect.y += round(self.player.y_vel)
             self.check_player_y_collisions()
-    
+
     def check_player_x_collisions(self):
-        ground_step_pipe = pg.sprite.spritecollideany(self.player, self.ground_step_pipe_group)
+        ground_step_pipe = pg.sprite.spritecollideany(
+            self.player, self.ground_step_pipe_group
+        )
         brick = pg.sprite.spritecollideany(self.player, self.brick_group)
         box = pg.sprite.spritecollideany(self.player, self.box_group)
         enemy = pg.sprite.spritecollideany(self.player, self.enemy_group)
@@ -563,8 +759,10 @@ class Level(tools.State):
         elif brick:
             self.adjust_player_for_x_collisions(brick)
         elif ground_step_pipe:
-            if (ground_step_pipe.name == c.MAP_PIPE and
-                ground_step_pipe.type == c.PIPE_TYPE_HORIZONTAL):
+            if (
+                ground_step_pipe.name == c.MAP_PIPE and
+                ground_step_pipe.type == c.PIPE_TYPE_HORIZONTAL
+            ):
                 return
             self.adjust_player_for_x_collisions(ground_step_pipe)
         elif powerup:
@@ -619,7 +817,7 @@ class Level(tools.State):
             else:
                 self.update_score(400, shell, 0)
                 if self.player.rect.x < shell.rect.x:
-                    self.player.rect.left = shell.rect.x 
+                    self.player.rect.left = shell.rect.x
                     shell.direction = c.RIGHT
                     shell.x_vel = 10
                 else:
@@ -643,7 +841,9 @@ class Level(tools.State):
         self.player.x_vel = 0
 
     def check_player_y_collisions(self):
-        ground_step_pipe = pg.sprite.spritecollideany(self.player, self.ground_step_pipe_group)
+        ground_step_pipe = pg.sprite.spritecollideany(
+            self.player, self.ground_step_pipe_group
+        )
         enemy = pg.sprite.spritecollideany(self.player, self.enemy_group)
         shell = pg.sprite.spritecollideany(self.player, self.shell_group)
 
@@ -667,10 +867,12 @@ class Level(tools.State):
                 self.move_to_dying_group(self.enemy_group, enemy)
                 direction = c.RIGHT if self.player.facing_right else c.LEFT
                 enemy.start_death_jump(direction)
-            elif (enemy.name == c.PIRANHA or
-                enemy.name == c.FIRESTICK or
-                enemy.name == c.FIRE_KOOPA or
-                enemy.name == c.FIRE):
+            elif (
+                enemy.name == c.PIRANHA
+                or enemy.name == c.FIRESTICK
+                or enemy.name == c.FIRE_KOOPA
+                or enemy.name == c.FIRE
+            ):
                 pass
             elif self.player.y_vel > 0:
                 self.update_score(100, enemy, 0)
@@ -696,7 +898,7 @@ class Level(tools.State):
                         shell.rect.right = self.player.rect.left - 5
         self.check_is_falling(self.player)
         self.check_if_player_on_IN_pipe()
-    
+
     def prevent_collision_conflict(self, sprite1, sprite2):
         if sprite1 and sprite2:
             distance1 = abs(self.player.rect.centerx - sprite1.rect.centerx)
@@ -706,7 +908,7 @@ class Level(tools.State):
             else:
                 sprite1 = False
         return sprite1, sprite2
-        
+
     def adjust_player_for_y_collisions(self, sprite):
         if self.player.rect.top > sprite.rect.top:
             if sprite.name == c.MAP_BRICK:
@@ -724,10 +926,9 @@ class Level(tools.State):
                     if sprite.type == c.TYPE_COIN:
                         self.update_score(200, sprite, 1)
                     sprite.start_bump(self.moving_score_list)
-            elif (sprite.name == c.MAP_PIPE and
-                sprite.type == c.PIPE_TYPE_HORIZONTAL):
+            elif sprite.name == c.MAP_PIPE and sprite.type == c.PIPE_TYPE_HORIZONTAL:
                 return
-            
+
             self.player.y_vel = 7
             self.player.rect.top = sprite.rect.bottom
             self.player.state = c.FALL
@@ -740,7 +941,7 @@ class Level(tools.State):
             #     self.player.state = c.WALK_AUTO
             # else:
             self.player.state = c.WALK
-    
+
     def check_if_enemy_on_brick_box(self, brick):
         brick.rect.y -= 5
         enemy = pg.sprite.spritecollideany(brick, self.enemy_group)
@@ -755,47 +956,53 @@ class Level(tools.State):
         brick.rect.y += 5
 
     def in_frozen_state(self):
-        if (self.player.state == c.SMALL_TO_BIG or
-            self.player.state == c.BIG_TO_SMALL or
-            self.player.state == c.BIG_TO_FIRE or
-            self.player.state == c.DEATH_JUMP or
-            self.player.state == c.DOWN_TO_PIPE or
-            self.player.state == c.UP_OUT_PIPE):
+        if (
+            self.player.state == c.SMALL_TO_BIG
+            or self.player.state == c.BIG_TO_SMALL
+            or self.player.state == c.BIG_TO_FIRE
+            or self.player.state == c.DEATH_JUMP
+            or self.player.state == c.DOWN_TO_PIPE
+            or self.player.state == c.UP_OUT_PIPE
+        ):
             return True
         else:
             return False
 
     def check_is_falling(self, sprite):
         sprite.rect.y += 1
-        check_group = pg.sprite.Group(self.ground_step_pipe_group,
-                            self.brick_group, self.box_group)
+        check_group = pg.sprite.Group(
+            self.ground_step_pipe_group, self.brick_group, self.box_group
+        )
         
         if pg.sprite.spritecollideany(sprite, check_group) is None:
-            if (sprite.state == c.WALK_AUTO or
-                sprite.state == c.END_OF_LEVEL_FALL):
+            if sprite.state == c.WALK_AUTO or sprite.state == c.END_OF_LEVEL_FALL:
                 sprite.state = c.END_OF_LEVEL_FALL
-            elif (sprite.state != c.JUMP and 
-                sprite.state != c.FLAGPOLE and
-                not self.in_frozen_state()):
+            elif (
+                sprite.state != c.JUMP
+                and sprite.state != c.FLAGPOLE
+                and not self.in_frozen_state()
+            ):
                 sprite.state = c.FALL
         sprite.rect.y -= 1
-    
+
     def check_for_player_death(self):
         if (self.player.rect.y > c.SCREEN_HEIGHT): #or self.overhead_info.time <= 0):
             self.player.start_death_jump(self.game_info)
             self.death_timer = self.current_time
 
     def check_if_player_on_IN_pipe(self):
-        '''check if player is on the pipe which can go down in to it '''
+        """check if player is on the pipe which can go down in to it"""
         self.player.rect.y += 1
         pipe = pg.sprite.spritecollideany(self.player, self.pipe_group)
         if pipe and pipe.type == c.PIPE_TYPE_IN:
-            if (self.player.crouching and
-                self.player.rect.x < pipe.rect.centerx and
-                self.player.rect.right > pipe.rect.centerx):
+            if (
+                self.player.crouching
+                and self.player.rect.x < pipe.rect.centerx
+                and self.player.rect.right > pipe.rect.centerx
+            ):
                 self.player.state = c.DOWN_TO_PIPE
         self.player.rect.y -= 1
-        
+
     def update_game_info(self):
         if self.player.dead:
             self.reset = True
@@ -813,9 +1020,9 @@ class Level(tools.State):
             # self.next = c.LOAD_SCREEN
 
     def update_viewport(self):
-        third = self.viewport.x + self.viewport.w//3
+        third = self.viewport.x + self.viewport.w // 3
         player_center = self.player.rect.centerx
-        
+
         if (self.player.x_vel > 0 and player_center >= third):
             self.viewport.x += round(self.player.x_vel)
         elif self.player.x_vel < 0 and self.viewport.x > self.left_bound:
@@ -823,11 +1030,10 @@ class Level(tools.State):
         
         self.left_bound = max(self.left_bound, self.viewport.x - 100)
 
-    
     def move_to_dying_group(self, group, sprite):
         group.remove(sprite)
         self.dying_group.add(sprite)
-        
+
     def update_score(self, score, sprite, coin_num=0):
         self.game_info[c.SCORE] += score
         self.game_info[c.COIN_TOTAL] += coin_num
