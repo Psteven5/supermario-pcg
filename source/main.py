@@ -69,10 +69,10 @@ def main():
         learning_rate=1e-4,
         n_steps=2_048,
         batch_size=64,
-        n_epochs=1,
+        n_epochs=2,
         gamma=0.99,
         verbose=1,
-        ent_coef=0.03,
+        ent_coef=0.04,
     )
 
     model.learn(total_timesteps=1_000_000)

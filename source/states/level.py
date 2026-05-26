@@ -467,7 +467,7 @@ class Level(tools.State):
         self.reward += (self.player.rect.x - self.last_x) * 0.02
         self.last_x = self.player.rect.x
         self.reward += (self.game_info[c.SCORE] - self.top_score) * 0.00001
-        self.reward -= 0.01
+        self.reward -= 0.009
         if self.player.dead:
             self.reward -= 0.1
         # print("#####################")
