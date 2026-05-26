@@ -34,28 +34,28 @@ class Character(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.image = image
         self.rect = self.image.get_rect()
-        
+
 class Info():
     def __init__(self, game_info, state):
         self.coin_total = game_info[c.COIN_TOTAL]
         self.total_lives = game_info[c.LIVES]
         self.state = state
         self.game_info = game_info
-        
+
         self.create_font_image_dict()
         self.create_info_labels()
         self.create_state_labels()
         self.flashing_coin = coin.FlashCoin(280, 53)
-        
+
     def create_font_image_dict(self):
         self.image_dict = {}
         image_list = []
-        
+
         image_rect_list = [# 0 - 9
                            (3, 230, 7, 7), (12, 230, 7, 7), (19, 230, 7, 7),
                            (27, 230, 7, 7), (35, 230, 7, 7), (43, 230, 7, 7),
                            (51, 230, 7, 7), (59, 230, 7, 7), (67, 230, 7, 7),
-                           (75, 230, 7, 7), 
+                           (75, 230, 7, 7),
                            # A - Z
                            (83, 230, 7, 7), (91, 230, 7, 7), (99, 230, 7, 7),
                            (107, 230, 7, 7), (115, 230, 7, 7), (123, 230, 7, 7),
@@ -68,11 +68,11 @@ class Info():
                            (20, 246, 7, 7), (27, 246, 7, 7), (48, 246, 7, 7),
                            # -*
                            (68, 249, 6, 2), (75, 247, 6, 6)]
-                           
+
         character_string = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ -*'
-        
+
         for character, image_rect in zip(character_string, image_rect_list):
-            self.image_dict[character] = tools.get_image(setup.GFX['text_images'], 
+            self.image_dict[character] = tools.get_image(setup.GFX['text_images'],
                                             *image_rect, (92, 148, 252), 2.9)
 
     def create_info_labels(self):
@@ -107,17 +107,17 @@ class Info():
             self.create_time_out_labels()
 
     def create_player_image(self):
-        self.life_times_image = tools.get_image(setup.GFX['text_images'], 
+        self.life_times_image = tools.get_image(setup.GFX['text_images'],
                                 75, 247, 6, 6, (92, 148, 252), 2.9)
         self.life_times_rect = self.life_times_image.get_rect(center=(378, 295))
         self.life_total_label = []
         self.create_label(self.life_total_label, str(self.total_lives), 450, 285)
-        
+
         if self.game_info[c.PLAYER_NAME] == c.PLAYER_MARIO:
             rect = (178, 32, 12, 16)
         else:
             rect = (178, 128, 12, 16)
-        self.player_image = tools.get_image(setup.GFX['mario_bros'], 
+        self.player_image = tools.get_image(setup.GFX['mario_bros'],
                                 *rect, (92, 148, 252), 2.9)
         self.player_rect = self.player_image.get_rect(center=(320, 290))
 
@@ -133,7 +133,7 @@ class Info():
         self.create_label(top_score, '000000', 400, 465)
         self.state_labels = [mario_game, luigi_game, top, top_score,
                             *self.info_labels]
-    
+
     def create_load_screen_labels(self):
         world_label = []
         self.stage_label2 = []
@@ -146,6 +146,7 @@ class Info():
     def create_level_labels(self):
         self.time = c.GAME_TIME_OUT
         self.current_time = 0
+        self.frame_count = 0
 
         self.clock_time_label = []
         self.create_label(self.clock_time_label, str(self.time), 645, 55)
@@ -154,10 +155,10 @@ class Info():
     def create_game_over_labels(self):
         game_label = []
         over_label = []
-        
+
         self.create_label(game_label, 'GAME', 280, 300)
         self.create_label(over_label, 'OVER', 400, 300)
-        
+
         self.state_labels = [game_label, over_label, *self.info_labels]
 
     def create_time_out_labels(self):
@@ -169,7 +170,7 @@ class Info():
         for letter in string:
             label_list.append(Character(self.image_dict[letter]))
         self.set_label_rects(label_list, x, y)
-    
+
     def set_label_rects(self, label_list, x, y):
         for i, letter in enumerate(label_list):
             letter.rect.x = x + ((letter.rect.width + 3) * i)
@@ -177,11 +178,11 @@ class Info():
             if letter.image == self.image_dict['-']:
                 letter.rect.y += 7
                 letter.rect.x += 2
-    
+
     def update(self, level_info, level=None):
         self.level = level
         self.handle_level_state(level_info)
-    
+
     def handle_level_state(self, level_info):
         self.score = level_info[c.SCORE]
         self.update_text(self.score_text, self.score)
@@ -191,11 +192,12 @@ class Info():
         if self.state == c.LOAD_SCREEN:
             self.update_text(self.stage_label2, level_info[c.LEVEL_NUM])
         if self.state == c.LEVEL:
-            if (level_info[c.CURRENT_TIME] - self.current_time) > 1000:
-                self.current_time = level_info[c.CURRENT_TIME]
-                self.time -= 1
+            self.frame_count += 1
+            if self.frame_count >= 60:
+                self.frame_count = 0
+                self.time += 1
                 self.update_text(self.clock_time_label, self.time, True)
-    
+
     def update_text(self, text, score, reset=False):
         if reset and len(text) > len(str(score)):
             text.remove(text[0])
@@ -205,14 +207,14 @@ class Info():
             text[index] = Character(self.image_dict[digit])
             text[index].rect = rect
             index -= 1
-        
+
     def draw(self, surface):
         self.draw_info(surface, self.state_labels)
         if self.state == c.LOAD_SCREEN:
             surface.blit(self.player_image, self.player_rect)
             surface.blit(self.life_times_image, self.life_times_rect)
         surface.blit(self.flashing_coin.image, self.flashing_coin.rect)
-    
+
     def draw_info(self, surface, label_list):
         for label in label_list:
             for letter in label:
