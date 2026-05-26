@@ -57,12 +57,12 @@ class Level(tools.State):
         
         # Load map data and set up background
         self.chunk_size = c.CHUNK_SIZE
-        chunk_chances = [c.CHANCE_GAP,
-                         c.CHANCE_PIPESTAIRS,
-                         c.CHANCE_BRICKS,
-                         c.CHANCE_BOXES,
-                         c.CHANCE_ENEMIES,
-                         c.CHANCE_PIRANHA]
+        chunk_chances = {'gaps': c.CHANCE_GAP,
+                         'pipestairs': c.CHANCE_PIPESTAIRS,
+                         'bricks': c.CHANCE_BRICKS,
+                         'boxes': c.CHANCE_BOXES,
+                         'enemies': c.CHANCE_ENEMIES,
+                         'piranha': c.CHANCE_PIRANHA}
         generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
         generator.generate_chunk(first=True)
         self.load_map()
@@ -106,18 +106,18 @@ class Level(tools.State):
             # Chances for different level components (between 0.0 and 1.0)
             # given an array chances:
             # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies, 5 - piranha in pipe
-            chunk_chances = []
+            chunk_chances = dict()
             k = 0.5 # how quickly we increase the chances
 
-            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk))
-            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk))
-            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk))
-            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk))
-            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk))
-            chunk_chances.append(self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk))
+            chunk_chances['gaps'] = self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk)
+            chunk_chances['pipestairs'] = self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk)
+            chunk_chances['bricks'] = self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk)
+            chunk_chances['boxes'] = self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk)
+            chunk_chances['enemies'] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
+            chunk_chances['piranha'] = self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk)
+            print(chunk_chances)
 
             difficulty = int(1 + self.current_chunk / 2)
-            print(difficulty)
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
             generator.generate_chunk()
             self.load_next_chunk()
