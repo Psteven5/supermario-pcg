@@ -462,7 +462,7 @@ class Level(tools.State):
     def update(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         if keys[tools.keybinding[c.JUMP]]:
-            self.jump_count = min(self.jump_count+1, 58)
+            self.jump_count = min(self.jump_count+1, 36)
         else:
             self.jump_count = 0
         self.handle_states(keys)  # do move and update state
@@ -484,7 +484,7 @@ class Level(tools.State):
         # print("#####################")
         self.draw(surface)  # update frame
 
-        print(reward)
+        # print(reward)
         if self.steps >= 10000:
             truncated = True
             self.player.dead = True

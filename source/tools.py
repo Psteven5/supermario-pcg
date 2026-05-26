@@ -230,7 +230,7 @@ class Control(gym.Env):
             self.event_loop()
             self.update()
             pg.display.update()
-            input()
+            self.clock.tick(60)
 
 
 # Function to get an image from a sprite sheet

@@ -57,6 +57,7 @@ def create_env(num_frames=4):
     game.state.done = True
     while type(game.state) is not level.Level:
         game.initial_step()
+    # game.main()
 
     return game
 
@@ -90,11 +91,8 @@ def main():
         n_epochs=3,
         gamma=0.99,
         verbose=1,
-        ent_coef=0.04,
+        ent_coef=0.03,
     )
 
     model.learn(total_timesteps=1_000_000, callback=eval_callback)
     model.save("./models/final_model")
-
-    # Start the main game loop
-    # game.main()
