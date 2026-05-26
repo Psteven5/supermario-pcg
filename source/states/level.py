@@ -42,8 +42,7 @@ from torch.distributions import Categorical
 
 from .. import constants as c
 from .. import setup, tools
-from ..components import box, brick, coin, enemy, info, player, powerup, stuff
-from ..components import info, stuff, player, brick, box, enemy, powerup, coin, ground, step
+from ..components import box, brick, coin, enemy, info, player, powerup, stuff, ground, step
 from .helper import evaluate
 from . import generate_chunk
 
@@ -85,11 +84,15 @@ class Level(tools.State):
     def __init__(self):
         tools.State.__init__(self)
         self.player = None
+        self.max_x = 0.0
+        self.reward = 0.0
+
         self.shift_threshold = c.SHIFT_THRESHOLD
         self.reset = True
 
     # Function to initialize the level state
     def startup(self, current_time, persist):
+
         # Initialize game information
         self.game_info = persist
         self.persist = self.game_info
@@ -98,11 +101,11 @@ class Level(tools.State):
         self.castle_timer = 0
         self.left_bound = 0
         self.mario_pos = 0
-        
+
         # Initialize lists and overhead information
         self.moving_score_list = []
         self.overhead_info = info.Info(self.game_info, c.LEVEL)
-        
+
         # Load map data and set up background
         self.chunk_size = c.CHUNK_SIZE
         chunk_chances = {"gaps": c.CHANCE_GAP,
@@ -117,7 +120,7 @@ class Level(tools.State):
         self.load_map()
         self.setup_background()
         self.setup_maps()
-        
+
         # Set up various sprite groups for collisions and interactions
         self.ground_group = self.setup_collide(c.MAP_GROUND)
         self.step_group = self.setup_collide(c.MAP_STEP)
@@ -331,9 +334,13 @@ class Level(tools.State):
         img_name = self.map_data[c.MAP_IMAGE]
         self.background = setup.GFX[img_name]
         self.bg_rect = self.background.get_rect()
-        self.background = pg.transform.scale(self.background, 
-                                    (int(self.bg_rect.width*c.BACKGROUND_MULTIPLER),
-                                    int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)))
+        self.background = pg.transform.scale(
+            self.background, 
+            (
+                int(self.bg_rect.width*c.BACKGROUND_MULTIPLER),
+                int(self.bg_rect.height*c.BACKGROUND_MULTIPLER)
+            ),
+        )
         self.bg_rect = self.background.get_rect()
         self.bg_offset = 0
 
@@ -345,14 +352,16 @@ class Level(tools.State):
         self.map_list = []
         if c.MAP_MAPS in self.map_data:
             for data in self.map_data[c.MAP_MAPS]:
-                self.map_list.append((data["start_x"], data["end_x"], data["player_x"], data["player_y"]))
+                self.map_list.append(
+                    (data["start_x"], data["end_x"], data["player_x"], data["player_y"])
+                )
             self.start_x, self.end_x, self.player_x, self.player_y = self.map_list[0]
         else: #TODO not used???
             self.start_x = 0
             self.end_x = self.chunk_size
             self.player_x = 110
             self.player_y = c.GROUND_HEIGHT
-    
+
     # Function to change the current map to a new one based on a checkpoint
     def change_map(self, index, type):
         self.start_x, self.end_x, self.player_x, self.player_y = self.map_list[index]
@@ -392,8 +401,15 @@ class Level(tools.State):
         self.pipe_group = pg.sprite.Group()
         if c.MAP_PIPE in self.map_data:
             for data in self.map_data[c.MAP_PIPE]:
-                self.pipe_group.add(stuff.Pipe(data["x"], data["y"],
-                    data["width"], data["height"], data["type"]))
+                self.pipe_group.add(
+                    stuff.Pipe(
+                        data["x"],
+                        data["y"],
+                        data["width"],
+                        data["height"],
+                        data["type"],
+                    )
+                )
 
     # Function to set up slider objects on the map
     def setup_slider(self):
@@ -404,8 +420,17 @@ class Level(tools.State):
                     vel = data[c.VELOCITY]
                 else:
                     vel = 1
-                self.slider_group.add(stuff.Slider(data["x"], data["y"], data["num"],
-                    data["direction"], data["range_start"], data["range_end"], vel))
+                self.slider_group.add(
+                    stuff.Slider(
+                        data["x"],
+                        data["y"],
+                        data["num"],
+                        data["direction"],
+                        data["range_start"],
+                        data["range_end"],
+                        vel,
+                    )
+                )
 
     def setup_static_coin(self):
         self.static_coin_group = pg.sprite.Group()
@@ -422,15 +447,19 @@ class Level(tools.State):
         if c.MAP_BRICK in self.map_data:
             for data in self.map_data[c.MAP_BRICK]:
                 brick.create_brick(self.brick_group, data, self)
-        
+
         self.box_group = pg.sprite.Group()
         if c.MAP_BOX in self.map_data:
             for data in self.map_data[c.MAP_BOX]:
                 if data["type"] == c.TYPE_COIN:
-                    self.box_group.add(box.Box(data["x"], data["y"], data["type"], self.coin_group))
+                    self.box_group.add(
+                        box.Box(data["x"], data["y"], data["type"], self.coin_group)
+                    )
                 else:
-                    self.box_group.add(box.Box(data["x"], data["y"], data["type"], self.powerup_group))
-    
+                    self.box_group.add(
+                        box.Box(data["x"], data["y"], data["type"], self.powerup_group)
+                    )
+
     # Function to set up the player object
     def setup_player(self):
         if self.player is None:
@@ -453,7 +482,7 @@ class Level(tools.State):
                 group.add(enemy.create_enemy(item, self))
             self.enemy_group_list.append(group)
             index += 1
-            
+
     def setup_checkpoints(self):
         self.checkpoint_group = pg.sprite.Group()
         for data in self.map_data[c.MAP_CHECKPOINT]:
@@ -465,9 +494,18 @@ class Level(tools.State):
                 map_index = data[c.MAP_INDEX]
             else:
                 map_index = 0
-            self.checkpoint_group.add(stuff.Checkpoint(data["x"], data["y"], data["width"], 
-                data["height"], data["type"], enemy_groupid, map_index))
-    
+            self.checkpoint_group.add(
+                stuff.Checkpoint(
+                    data["x"],
+                    data["y"],
+                    data["width"], 
+                    data["height"],
+                    data["type"],
+                    enemy_groupid,
+                    map_index,
+                )
+            )
+
     def setup_flagpole(self):
         self.flagpole_group = pg.sprite.Group()
         if c.MAP_FLAGPOLE in self.map_data:
@@ -485,7 +523,7 @@ class Level(tools.State):
         self.dying_group = pg.sprite.Group()
         self.enemy_group = pg.sprite.Group()
         self.shell_group = pg.sprite.Group()
-    
+
         self.ground_step_pipe_group = pg.sprite.Group(
             self.ground_group, self.pipe_group, self.step_group, self.slider_group
         )
