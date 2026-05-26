@@ -26,6 +26,8 @@ __author__ = "m0rniac"
 
 import pygame as pg
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.monitor import Monitor
 
 from . import constants as c
 from . import setup, tools
@@ -33,8 +35,7 @@ from .states import level, load_screen, main_menu
 from .states.ppo import MarioEncoder, MarioPPOWrapper
 
 
-# Define the main function of the script
-def main():
+def create_env():
     # Create an instance of the Control class from the 'tools' module
     game = tools.Control()
 
@@ -57,6 +58,23 @@ def main():
     while type(game.state) is not level.Level:
         game.initial_step()
 
+    return game
+
+# Define the main function of the script
+def main():
+    # Create an instance of the Control class from the 'tools' module
+    env = create_env()
+    eval_env = create_env()
+    eval_callback = EvalCallback(
+        eval_env,
+        eval_freq=10000,
+        best_model_save_path="./models/",
+        log_path="./models/",
+        n_eval_episodes=5,
+        deterministic=True,
+    )
+
+
     policy_kwargs = dict(
         features_extractor_class=MarioEncoder,
         features_extractor_kwargs=dict(features_dim=128),
@@ -64,7 +82,7 @@ def main():
 
     model = PPO(
         policy=MarioPPOWrapper,
-        env=game,
+        env=env,
         policy_kwargs=policy_kwargs,
         learning_rate=1e-4,
         n_steps=2_048,
@@ -75,7 +93,8 @@ def main():
         ent_coef=0.04,
     )
 
-    model.learn(total_timesteps=1_000_000)
+    model.learn(total_timesteps=1_000_000, callback=eval_callback)
+    model.save("./models/final_model")
 
     # Start the main game loop
     # game.main()
