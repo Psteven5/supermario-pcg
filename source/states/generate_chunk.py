@@ -62,7 +62,6 @@ class GenerateChunk():
     def generate_chunk(self, first=False):
         """Choose to either generate a normal level or a brick chunk level"""
         if random.random() < self.chunk_bricks_chance:
-            print("hoi")
             self.generate_chunk_bricks(first)
         else:
             self.generate_chunk_normal(first)
@@ -151,6 +150,7 @@ class GenerateChunk():
         self.current_x = 0
         target_width = self.chunk_size
         current_height = 450  # about the height of the ground
+        bricks_segments = []
         first_brick = True
         
         # If first chunk (starting position), generate only ground only first
@@ -174,17 +174,26 @@ class GenerateChunk():
                 first_brick = False
             else:
                 height_diff_choice = random.randint(c.BRICK_CHUNK_MIN_HEIGHT_DIFF, c.BRICK_CHUNK_MAX_HEIGHT_DIFF)
+                # 50/50 chance to add or subtract height
+                if random.random() < 0.5:
+                    height_diff_choice = -height_diff_choice
+
                 height_range = c.BRICK_CHUNK_MAX_HEIGHT - c.BRICK_CHUNK_MIN_HEIGHT
                 shifted_height = current_height + height_diff_choice - c.BRICK_CHUNK_MIN_HEIGHT
                 current_height = c.BRICK_CHUNK_MIN_HEIGHT + height_range - abs(height_range - shifted_height%(2*height_range))
 
+            # Generate brick series, and keep a log of brick segments (start x, end x, height y)
+            bricks_segments.append([self.current_x, self.current_x, current_height])
             self.generate_chunk_brick_series(current_height, bricks_width_choice)
             self.current_x += bricks_width_choice * c.BRICK_SIZE
+            bricks_segments[-1][1] = self.current_x
             
             # Gap between bricks
             gap_width_choice = random.randint(c.BRICK_CHUNK_MIN_GAP, c.BRICK_CHUNK_MAX_GAP)
             self.current_x += gap_width_choice * c.BRICK_SIZE
 
+        self.generate_chunk_brick_enemies(bricks_segments)
+        self.generate_checkpoint()
         self.save_chunk()
 
 
@@ -341,6 +350,49 @@ class GenerateChunk():
                     current_x += random.randint(150, 250)
 
                 current_x += random.randint(80, 150)
+    
+    def generate_chunk_brick_enemies(self, bricks_segments):
+        enemy_list = self.chunk[c.MAP_ENEMY]
+        safe_start_x = c.SCREEN_WIDTH + 100
+        enemy_types = min(self.difficulty, 2)
+        
+        # Ignore the first few bricks
+        if len(bricks_segments) > 2:
+            bricks_segments = bricks_segments[2:]
+        
+        for seg in bricks_segments:
+            start_x = seg[0] + c.BRICK_CHUNK_ENEMY_MARGIN
+            end_x = seg[1] - c.BRICK_CHUNK_ENEMY_MARGIN
+            height = seg[2]
+            
+            # If bricks series too small, skip
+            if start_x >= end_x:
+                continue
+
+            x_pos = random.randint(start_x, end_x)
+            if random.random() < self.enemies_chance:
+                enemy_type = 1  # Koopa
+                enemy = {
+                    "x": int(x_pos),
+                    "y": int(height - 40),
+                    "direction": 0,
+                    "type": enemy_type,
+                    "color": 0,
+                    "num": 1
+                }
+
+                # Optional movement behavior
+                if enemy_type == 1:
+                    enemy["range"] = 1
+                    enemy["range_start"] = start_x
+                    enemy["range_end"] = end_x
+                
+                group_index = len(enemy_list)
+                enemy_list.append({str(group_index): [enemy]})
+        
+        print(enemy_list)
+
+
 
     def generate_slider(self):
         pass
