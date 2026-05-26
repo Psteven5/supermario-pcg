@@ -195,10 +195,15 @@ class GenerateChunk():
             curr_x = base_x + i * c.BRICK_SIZE
             # Make a random block in the bricks a box
             if random.random() < 0.05:
+                block_type = [1,3,6]
+                if self.difficulty > 2:
+                    block_type = [1,3,4,6]
+                if self.difficulty > 3:
+                    block_type = [1,2,3,4,6] # TODO STAR WERKT NOG NIET
                 self.chunk[c.MAP_BOX].append({
                     "x": curr_x,
                     "y": self.GROUND_Y - height,
-                    "type": random.randint(1,6) #TODO: Misschien niet alles erin doen
+                    "type": random.choice(block_type)
                 })
             else:
                 self.chunk[c.MAP_BRICK].append({
@@ -211,10 +216,15 @@ class GenerateChunk():
     def generate_box(self, height):
         base_x = self.current_x
         curr_x = base_x + c.BRICK_SIZE
+        block_type = [1,3,6]
+        if self.difficulty > 2:
+            block_type = [1,3,4,6]
+        if self.difficulty > 3:
+            block_type = [1,2,3,4,6] # TODO STAR WERKT NOG NIET
         self.chunk[c.MAP_BOX].append({
             "x": curr_x,
             "y": self.GROUND_Y - height,
-            "type": random.randint(1,6) #TODO: Misschien niet alles erin doen
+            "type": random.choice(block_type)
         })
 
     def generate_enemy(self):
