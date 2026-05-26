@@ -84,7 +84,7 @@ class State:
 # Class representing the Control for game states
 class Control(gym.Env):
     def __init__(
-        self, width=20, height=15, num_features=7, num_frames=4, num_actions=10
+        self, num_frames, width=20, height=15, num_features=7, num_actions=10
     ):
         super().__init__()
 

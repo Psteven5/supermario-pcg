@@ -37,7 +37,7 @@ from .states.ppo import MarioEncoder, MarioPPOWrapper
 
 def create_env(num_frames, frame_skip):
     # Create an instance of the Control class from the 'tools' module
-    game = tools.Control(num_frames=num_frames)
+    game = tools.Control(num_frames)
 
     rl = True
 
@@ -75,7 +75,7 @@ def main():
         best_model_save_path="./models/",
         log_path="./models/",
         n_eval_episodes=5,
-        deterministic=True,
+        deterministic=False,
     )
 
     policy_kwargs = dict(
