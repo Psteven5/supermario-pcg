@@ -428,7 +428,7 @@ class Level(tools.State):
                 0,
                 self.player.rect.w,
                 self.player.rect.h,
-                self.player.x_vel,
+                self.player.rect.x - self.last_x,
                 self.player.y_vel,
                 EntityType.PLAYER,
             )
@@ -588,8 +588,8 @@ class Level(tools.State):
         return self.state_to_tensor(), reward, self.player.dead, truncated
 
     def update(self, surface, keys, current_time):
-        # return self.update_pieter(surface, keys, current_time)
-        return self.update_alex(surface, keys, current_time)
+        return self.update_pieter(surface, keys, current_time)
+        # return self.update_alex(surface, keys, current_time)
     
     def handle_states(self, keys):
         self.update_all_sprites(keys)
