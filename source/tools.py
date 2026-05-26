@@ -138,6 +138,7 @@ class Control(gym.Env):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.done = True
+                exit(0)
             elif event.type == pg.KEYDOWN:
                 self.keys = pg.key.get_pressed()
             elif event.type == pg.KEYUP:
@@ -196,6 +197,7 @@ class Control(gym.Env):
                 print("Invalid macro action")
                 exit(1)
 
+        self.event_loop()
         state, reward, done = self.update(keys)
         pg.display.update()
 
@@ -208,6 +210,7 @@ class Control(gym.Env):
             self.state.done = True
 
         while True:
+            self.event_loop()
             result = self.update()
             if result is not None:
                 break
