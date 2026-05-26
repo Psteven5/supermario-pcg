@@ -34,6 +34,7 @@ class GenerateChunk():
             self.box_chance = chances['boxes']
             self.enemies_chance = chances['enemies']
             self.piranha_pipe = chances['piranha']
+            self.chunk_bricks_chance = chances['chunk_bricks']
         else:
             # Default values
             self.gaps_chance = 0.3
@@ -42,6 +43,7 @@ class GenerateChunk():
             self.box_chance = 0.1
             self.enemies_chance = 0.3
             self.piranha_pipe = 0.3
+            self.chunk_bricks_chance = 0.0
 
         self.chunk = {
             c.MAP_IMAGE: "level_1",
@@ -58,7 +60,15 @@ class GenerateChunk():
         self.current_x = 0
 
     def generate_chunk(self, first=False):
-        """Generate the level."""
+        """Choose to either generate a normal level or a brick chunk level"""
+        if random.random() < self.chunk_bricks_chance:
+            print("hoi")
+            self.generate_chunk_bricks(first)
+        else:
+            self.generate_chunk_normal(first)
+
+    def generate_chunk_normal(self, first=False):
+        """Generate a normal chunk."""
         self.current_x = 0
         target_width = self.chunk_size
         segment_length_choices = [s*c.FLOOR_BRICK_SIZE for s in range(c.MIN_FLOOR_DISTANCE, c.MAX_FLOOR_DISTANCE+1)]
@@ -136,6 +146,48 @@ class GenerateChunk():
         self.generate_checkpoint()
         self.save_chunk()
 
+    def generate_chunk_bricks(self, first=False):
+        """Generate a brick chunk, without ground (depending on start chunk)."""
+        self.current_x = 0
+        target_width = self.chunk_size
+        current_height = 450  # about the height of the ground
+        first_brick = True
+        
+        # If first chunk (starting position), generate only ground only first
+        if first:
+            self.generate_ground(c.START_GEN_OFFSET)
+
+        self.current_x += random.randint(c.BRICK_CHUNK_MIN_GAP, c.BRICK_CHUNK_MAX_GAP)
+
+        # Generate rows of bricks
+        while self.current_x < target_width:
+            bricks_width_choice = random.randint(c.BRICK_CHUNK_WIDTH_MIN, c.BRICK_CHUNK_WIDTH_MAX)
+            while self.current_x + bricks_width_choice * c.BRICK_SIZE > target_width:
+                bricks_width_choice -= 1
+
+            # Check whether bricks can still be placed at the end
+            if bricks_width_choice <= 0:
+                break
+
+            # Determine the difference wrt height to the last brick row
+            if first_brick:
+                first_brick = False
+            else:
+                height_diff_choice = random.randint(c.BRICK_CHUNK_MIN_HEIGHT_DIFF, c.BRICK_CHUNK_MAX_HEIGHT_DIFF)
+                height_range = c.BRICK_CHUNK_MAX_HEIGHT - c.BRICK_CHUNK_MIN_HEIGHT
+                shifted_height = current_height + height_diff_choice - c.BRICK_CHUNK_MIN_HEIGHT
+                current_height = c.BRICK_CHUNK_MIN_HEIGHT + height_range - abs(height_range - shifted_height%(2*height_range))
+
+            self.generate_chunk_brick_series(current_height, bricks_width_choice)
+            self.current_x += bricks_width_choice * c.BRICK_SIZE
+            
+            # Gap between bricks
+            gap_width_choice = random.randint(c.BRICK_CHUNK_MIN_GAP, c.BRICK_CHUNK_MAX_GAP)
+            self.current_x += gap_width_choice * c.BRICK_SIZE
+
+        self.save_chunk()
+
+
     def generate_ground(self, width):
         """Adds basic floor."""
         self.chunk[c.MAP_GROUND].append({
@@ -210,6 +262,17 @@ class GenerateChunk():
                 self.chunk[c.MAP_BRICK].append({
                 "x": curr_x,
                 "y": self.GROUND_Y - height,
+                "type": 0
+            })
+                
+    def generate_chunk_brick_series(self, height, num_bricks):
+        """Generates a series of bricks."""
+        base_x = self.current_x
+        for i in range(num_bricks):
+            curr_x = base_x + i * c.BRICK_SIZE
+            self.chunk[c.MAP_BRICK].append({
+                "x": curr_x,
+                "y": height,
                 "type": 0
             })
 
@@ -312,7 +375,7 @@ class GenerateChunk():
                 "type": 0,
                 "enemy_groupid": index
             })
-        
+
     def save_chunk(self):
         map_file = 'chunk.json'
         file_path = os.path.join('source', 'data', 'maps', map_file)
