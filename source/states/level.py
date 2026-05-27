@@ -582,7 +582,7 @@ class Level(tools.State):
                  - min(self.idle, 20) * 0.005
                  - int(self.player.dead))
         self.draw(surface)  # update frame
-        if self.steps >= 10000 // self.frame_skip:
+        if self.steps >= 10000:
             truncated = True
             self.player.dead = True
         else:
