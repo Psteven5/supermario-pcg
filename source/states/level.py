@@ -661,7 +661,7 @@ class Level(tools.State):
     def update(self, surface, keys, current_time):
         global max_mario_x
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        print(self.player.rect.x)
+        #print(self.player.rect.x)
         max_mario_x = self.mario_pos + self.player.rect.x
         self.handle_states(keys)  # do move and update state
         # RL PART

@@ -391,11 +391,11 @@ class GenerateChunk():
         base_x = self.current_x
         for i in range(steps):
             step_h = (i + 1) * c.STAIR_SIZE
-            curr_x = base_x + (i * 40) if direction == 0 else base_x + ((steps - i) * 40)
+            curr_x = base_x + (i * 43) if direction == 0 else base_x + ((steps - i) * 43)
             self.chunk[c.MAP_STEP].append({
                 "x": curr_x,
                 "y": self.GROUND_Y - step_h,
-                "width": 40,
+                "width": 43,
                 "height": step_h
             })
 
