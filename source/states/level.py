@@ -326,7 +326,8 @@ class Level(tools.State):
         
         for group in self.enemy_group_list:
             for sprite in group:
-                sprite.rect.x -= offset
+                if sprite not in self.enemy_group:
+                    sprite.rect.x -= offset
 
 
     # Function to set up the level background
