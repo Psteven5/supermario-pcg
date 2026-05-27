@@ -83,7 +83,7 @@ def main():
         best_model_save_path=path,
         log_path=path,
         n_eval_episodes=5,
-        deterministic=True,
+        deterministic=False,
     )
 
     if use_macro:

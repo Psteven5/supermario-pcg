@@ -575,6 +575,7 @@ class Level(tools.State):
         self.best_x = max(self.best_x, self.player.rect.x)
         if self.render:
             self.draw(surface)  # update frame
+            print(reward)
         truncated = False
         if not (self.player.state == c.FLAGPOLE or
                 self.player.state == c.WALK_AUTO or
@@ -586,7 +587,6 @@ class Level(tools.State):
                 self.steps += 1
         else:
             self.player.dead = True
-        print(reward)
         return self.state_to_tensor(), reward, self.player.dead, truncated
 
     def update(self, surface, keys, current_time):
