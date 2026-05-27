@@ -569,12 +569,12 @@ class Level(tools.State):
         self.best_x = max(self.best_x, self.player.rect.x)
         if self.render:
             self.draw(surface)  # update frame
+        truncated = False
         if self.player.state != c.FLAGPOLE:
             if self.steps >= 10000 // self.frame_skip:
                 truncated = True
                 self.player.dead = True
             else:
-                truncated = False
                 self.steps += 1
         else:
             self.player.dead = True
