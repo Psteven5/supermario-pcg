@@ -22,7 +22,7 @@ class GenerateChunk():
 
         # Chances for different level components (between 0.0 and 1.0)
         # given an array chances:
-        # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies, 5 - piranha in pipe, 6 - chunk is only bricks, 7 - chunk is split in two
+        # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies, 5 - chunk is only bricks, 6 - chunk is split in two
         if len(chances) >= 7:
             # Filtering in case a value is not inbetween 0.0 and 1.0
             for chance in chances:
@@ -33,7 +33,6 @@ class GenerateChunk():
             self.bricks_chance = chances['bricks']
             self.box_chance = chances['boxes']
             self.enemies_chance = chances['enemies']
-            self.piranha_pipe = chances['piranha']
             self.chunk_bricks_chance = chances['chunk_bricks']
             self.chunk_split_chance = chances['chunk_split']
         else:
@@ -43,7 +42,6 @@ class GenerateChunk():
             self.bricks_chance = 0.5
             self.box_chance = 0.1
             self.enemies_chance = 0.3
-            self.piranha_pipe = 0.3
             self.chunk_bricks_chance = 0.0
             self.chunk_split_chance = 0.0
 
@@ -362,21 +360,7 @@ class GenerateChunk():
         heights = [84, 126, 170]
         h = heights[height_type]
         pipe_top = self.GROUND_Y - h
-        # Chance of having a piranha in the pipe. Keep it out of the first
-        # visible area so its checkpoint is not behind the player.
-        if random.random() < self.piranha_pipe:
-            enemy = {
-                        "x": self.current_x + 25,
-                        "y": pipe_top + 80,
-                        "direction": 0,
-                        "type": 3,
-                        "color": 0,
-                        "range" : 1,
-                        "range_start": pipe_top - 60,
-                        "range_end": pipe_top + 80,
-                    }
-            group_index = len(self.chunk[c.MAP_ENEMY])
-            self.chunk[c.MAP_ENEMY].append({str(group_index): [enemy]})
+        
         self.chunk[c.MAP_PIPE].append({
             "x": self.current_x,
             "y": pipe_top,
