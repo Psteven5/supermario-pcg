@@ -1,5 +1,7 @@
+from stable_baselines3.common.distributions import Categorical
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+import torch
 from torch import nn
 
 
@@ -84,3 +86,25 @@ class MarioPPOWrapper(ActorCriticPolicy):
     
     def _build_mlp_extractor(self):
         self.mlp_extractor = MarioPPO(self.features_dim)
+
+    def _get_action_from_latent(self, latent_pi, deterministic=False):
+        dir_logits, jump_logits, action_logits = self.mlp_extractor.forward_actor(latent_pi)
+        if deterministic:
+            dir = torch.argmax(dir_logits, dim=1)
+            jump = torch.argmax(jump_logits, dim=1)
+            action = torch.argmax(action_logits, dim=1)
+        else:
+            dir = Categorical(logits=dir_logits).sample()
+            jump = Categorical(logits=jump_logits).sample()
+            action = Categorical(logits=action_logits).sample()
+        return torch.stack([dir, jump, action], dim=1)
+    
+    def _get_action_log_prob(self, actions, latent_pi):
+        dir_logits, jump_logits, action_logits = self.mlp_extractor.forward_actor(latent_pi)
+        dir = actions[:, 0]
+        jump = actions[:, 1]
+        action = actions[:, 2]
+        dir_prob = Categorical(logits=dir_logits).log_prob(dir)
+        jump_prob = Categorical(logits=jump_logits).log_prob(jump)
+        action_prob = Categorical(logits=action_logits).log_prob(action)
+        return dir_prob + jump_prob + action_prob

@@ -46,18 +46,6 @@ from ..components import box, brick, coin, enemy, info, player, powerup, stuff
 from .helper import evaluate
 from ..tools import keybinding
 
-class MacroMove(Enum):
-    LEFT = 0
-    RIGHT = auto()
-    ACTION = auto()
-    JUMP = auto()
-    LEFT_ACTION = auto()
-    RIGHT_ACTION = auto()
-    LEFT_JUMP = auto()
-    RIGHT_JUMP = auto()
-    LEFT_ACTION_JUMP = auto()
-    RIGHT_ACTION_JUMP = auto()
-
 
 class EntityType(Enum):
     PLAYER = 0

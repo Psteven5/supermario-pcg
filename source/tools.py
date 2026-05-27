@@ -37,12 +37,12 @@ from gymnasium import spaces
 class MacroMove(IntEnum):
     LEFT = 0
     RIGHT = auto()
-    ACTION = auto()
     JUMP = auto()
-    LEFT_ACTION = auto()
-    RIGHT_ACTION = auto()
+    ACTION = auto()
     LEFT_JUMP = auto()
     RIGHT_JUMP = auto()
+    LEFT_ACTION = auto()
+    RIGHT_ACTION = auto()
     LEFT_ACTION_JUMP = auto()
     RIGHT_ACTION_JUMP = auto()
 
@@ -95,7 +95,11 @@ class Control(gym.Env):
             dtype=np.float32,
         )
 
-        self.action_space = spaces.Discrete(num_actions)
+        self.action_space = spaces.MultiDiscrete([
+            3,
+            2,
+            2,
+        ])
 
         # Control variables
         self.screen = pg.display.get_surface()
@@ -147,55 +151,11 @@ class Control(gym.Env):
     def step(self, action):
         # init easy_keys
         keys = {}
-        keys[keybinding["left"]] = False
-        keys[keybinding["right"]] = False
-        keys[keybinding["jump"]] = False
+        keys[keybinding["left"]] = action[0] == 0
+        keys[keybinding["right"]] = action[0] == 2
+        keys[keybinding["jump"]] = action[1]
         keys[keybinding["down"]] = False
-        keys[keybinding["action"]] = False
-
-        # easy_keys = self.env.getkeys(self) # do func to give new keys
-        match action:
-            case MacroMove.LEFT:
-                keys[keybinding["left"]] = True
-
-            case MacroMove.RIGHT:
-                keys[keybinding["right"]] = True
-
-            case MacroMove.ACTION:
-                keys[keybinding["action"]] = True
-
-            case MacroMove.JUMP:
-                keys[keybinding["jump"]] = True
-
-            case MacroMove.LEFT_ACTION:
-                keys[keybinding["left"]] = True
-                keys[keybinding["action"]] = True
-
-            case MacroMove.RIGHT_ACTION:
-                keys[keybinding["right"]] = True
-                keys[keybinding["action"]] = True
-
-            case MacroMove.LEFT_JUMP:
-                keys[keybinding["left"]] = True
-                keys[keybinding["jump"]] = True
-
-            case MacroMove.RIGHT_JUMP:
-                keys[keybinding["right"]] = True
-                keys[keybinding["jump"]] = True
-
-            case MacroMove.LEFT_ACTION_JUMP:
-                keys[keybinding["left"]] = True
-                keys[keybinding["action"]] = True
-                keys[keybinding["jump"]] = True
-
-            case MacroMove.RIGHT_ACTION_JUMP:
-                keys[keybinding["right"]] = True
-                keys[keybinding["action"]] = True
-                keys[keybinding["jump"]] = True
-
-            case _:
-                print("Invalid macro action")
-                exit(1)
+        keys[keybinding["action"]] = action[2]
 
         self.event_loop()
         result = None
