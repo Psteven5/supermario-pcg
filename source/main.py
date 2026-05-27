@@ -35,9 +35,9 @@ from .states import level, load_screen, main_menu
 from .states.ppo import MarioEncoder, MarioPPOWrapper
 
 
-def create_env(num_frames, frame_skip):
+def create_env(num_frames, frame_skip, render):
     # Create an instance of the Control class from the 'tools' module
-    game = tools.Control(num_frames)
+    game = tools.Control(num_frames, render)
 
     rl = True
 
@@ -46,7 +46,7 @@ def create_env(num_frames, frame_skip):
         c.MAIN_MENU: main_menu.Menu(),
         c.LOAD_SCREEN: load_screen.LoadScreen(rl),
         # c.LEVEL: level.Level(),
-        c.LEVEL: level.Level(rl, num_frames, frame_skip),
+        c.LEVEL: level.Level(rl, num_frames, frame_skip, render),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut(),
     }
@@ -57,8 +57,8 @@ def create_env(num_frames, frame_skip):
     game.state.done = True
     while type(game.state) is not level.Level:
         game.initial_step()
-    # game.main()
-
+    if not rl:
+        game.main()
     return game
 
 # Define the main function of the script
@@ -67,8 +67,8 @@ def main():
     frame_skip = 4
 
     # Create an instance of the Control class from the 'tools' module
-    env = create_env(num_frames, frame_skip)
-    eval_env = create_env(num_frames, frame_skip)
+    env = create_env(num_frames, frame_skip, False)
+    eval_env = create_env(num_frames, frame_skip, False)
     eval_callback = EvalCallback(
         eval_env,
         eval_freq=10000,

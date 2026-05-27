@@ -84,7 +84,7 @@ class State:
 # Class representing the Control for game states
 class Control(gym.Env):
     def __init__(
-        self, num_frames, width=20, height=15, num_features=7, num_actions=10
+        self, num_frames, render, width=20, height=15, num_features=7, num_actions=10
     ):
         super().__init__()
 
@@ -95,11 +95,8 @@ class Control(gym.Env):
             dtype=np.float32,
         )
 
-        self.action_space = spaces.MultiDiscrete([
-            3,
-            2,
-            2,
-        ])
+        self.do_render = render
+        self.action_space = spaces.MultiDiscrete([3, 2, 2])
 
         # Control variables
         self.screen = pg.display.get_surface()
@@ -185,14 +182,16 @@ class Control(gym.Env):
     def initial_step(self):
         self.event_loop()
         self.update()
-        pg.display.update()
+        if self.do_render:
+            pg.display.update()
 
     def main(self):
         # Main game loop
         while not self.done:
             self.event_loop()
             self.update()
-            pg.display.update()
+            if self.do_render:
+                pg.display.update()
             self.clock.tick(60)
 
 

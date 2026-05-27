@@ -70,7 +70,7 @@ class Entity:
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self, rl, num_frames, frame_skip):
+    def __init__(self, rl, num_frames, frame_skip, render):
         tools.State.__init__(self)
         self.player = None
 
@@ -82,6 +82,7 @@ class Level(tools.State):
         self.dx = 0
         self.idle = 0
         self.steps = 0
+        self.render = render
 
         self.death_timeout = 0 if rl else 3000
         self.live_change_on_death = 0 if rl else 1
@@ -563,15 +564,20 @@ class Level(tools.State):
         dx = self.player.rect.x - last_x
         reward = ( max(0, (self.player.rect.x - self.best_x) * 0.05)
                  - int(dx <= 0) * 0.01
-                 - int(self.player.dead))
+                 - int(self.player.dead)
+                 + int(self.player.state == c.FLAGPOLE) * 100)
         self.best_x = max(self.best_x, self.player.rect.x)
-        self.draw(surface)  # update frame
-        if self.steps >= 10000 // self.frame_skip:
-            truncated = True
-            self.player.dead = True
+        if self.render:
+            self.draw(surface)  # update frame
+        if self.player.state != c.FLAGPOLE:
+            if self.steps >= 10000 // self.frame_skip:
+                truncated = True
+                self.player.dead = True
+            else:
+                truncated = False
+                self.steps += 1
         else:
-            truncated = False
-            self.steps += 1
+            self.player.dead = True
         print(reward)
         return self.state_to_tensor(), reward, self.player.dead, truncated
 
