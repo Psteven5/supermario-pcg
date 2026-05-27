@@ -36,7 +36,7 @@ from gymnasium import spaces
 
 class MacroMove(IntEnum):
     LEFT_ACTION = 0
-    LEFT_JUMP = auto()
+    LEFT_ACTION_JUMP = auto()
     JUMP = auto()
     RIGHT_JUMP = auto()
     RIGHT_ACTION_JUMP = auto()
@@ -172,8 +172,9 @@ class Control(gym.Env):
                     keys[keybinding["right"]] = True
                     keys[keybinding["action"]] = True
 
-                case MacroMove.LEFT_JUMP:
+                case MacroMove.LEFT_ACTION_JUMP:
                     keys[keybinding["left"]] = True
+                    keys[keybinding["action"]] = True
                     keys[keybinding["jump"]] = True
 
                 case MacroMove.RIGHT_JUMP:

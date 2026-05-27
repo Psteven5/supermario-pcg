@@ -66,8 +66,13 @@ def create_env(num_frames, frame_skip, use_macro, render):
 def main():
     num_frames = 4
     frame_skip = 4
-    use_macro = True
-    render = True
+    use_macro = False
+    render = False
+
+    if use_macro:
+        path = "./macro/"
+    else:
+        path = "./controller/"
 
     # Create an instance of the Control class from the 'tools' module
     env = create_env(num_frames, frame_skip, use_macro, render)
@@ -75,10 +80,10 @@ def main():
     eval_callback = EvalCallback(
         eval_env,
         eval_freq=10000,
-        best_model_save_path="./models/",
-        log_path="./models/",
+        best_model_save_path=path,
+        log_path=path,
         n_eval_episodes=5,
-        deterministic=False,
+        deterministic=True,
     )
 
     if use_macro:
@@ -108,4 +113,4 @@ def main():
     )
 
     model.learn(total_timesteps=1_000_000, callback=eval_callback)
-    model.save("./models/final_model")
+    model.save(f"{path}final_model")
