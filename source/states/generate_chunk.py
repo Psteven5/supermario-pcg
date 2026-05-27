@@ -434,9 +434,9 @@ class GenerateChunk():
         })
 
     def generate_enemy(self):
-        enemy_list = self.chunk[c.MAP_ENEMY]
+        enemy_list = self.chunk[c.MAP_ENEMY]        
         safe_start_x = c.SCREEN_WIDTH + 100
-        enemy_types = min(self.difficulty, 2)
+        enemy_types = min(self.difficulty, c.ENEMY_TYPE_FLY_KOOPA)
         # 0 Goomba, 1 Koopa, 2 Koopa flying, 3 piranha plant, 4 firestick, 5 bowser
         # Generate enemies across all ground segments.
         for seg in self.chunk[c.MAP_GROUND]:
@@ -447,13 +447,20 @@ class GenerateChunk():
 
             while current_x < end_x - 150:
                 
-                close_to_steps = False # To check whether we are close to stairs (we do not spawn enemies here)
+                # To check whether we are close to stairs or pipes (we do not spawn enemies here)
+                close_to_pipestairs = False
+
                 for step in self.chunk[c.MAP_STEP]:
                     if abs(current_x - step['x']) < 200:
-                        close_to_steps = True
+                        close_to_pipestairs = True
+                        break
+                for pipe in self.chunk[c.MAP_PIPE]:
+                    if abs(current_x - pipe['x']) < 100:
+                        close_to_pipestairs = True
                         break
 
-                if random.random() < self.enemies_chance and not close_to_steps:
+                # Randomly decide to place a random type of enemy
+                if random.random() < self.enemies_chance and not close_to_pipestairs:
                     enemy_type = random.randint(0, enemy_types)
                     enemy = {
                         "x": int(current_x),
@@ -465,12 +472,24 @@ class GenerateChunk():
                     }
 
                     # Optional movement behavior
-                    if enemy_type == 1:
-                        enemy["range"] = 1
-                        enemy["range_start"] = int(current_x - random.randint(100, 250))
-                        enemy["range_end"] = int(current_x + random.randint(100, 250))
+                    if enemy_type == c.ENEMY_TYPE_KOOPA:
+                        # Also determine the distance to a pipe
+                        min_range_start = 250  # equals the max values of range_start and range_end
+                        min_range_end = 250    # TODO: declare constants for enemy range?
 
-                    elif enemy_type == 2:
+                        for pipe in self.chunk[c.MAP_PIPE]: 
+                            distance_to_pipe = pipe['x'] - current_x
+                            if abs(distance_to_pipe) < 250:
+                                if distance_to_pipe < 0 and -distance_to_pipe < min_range_start:
+                                    min_range_start = -distance_to_pipe
+                                elif distance_to_pipe < min_range_end:
+                                    min_range_end = distance_to_pipe
+
+                        enemy["range"] = 1
+                        enemy["range_start"] = int(min(current_x - min_range_start, current_x - random.randint(100, 250)))
+                        enemy["range_end"] = int(min(current_x + min_range_end, current_x + random.randint(100, 250)))
+
+                    elif enemy_type == c.ENEMY_TYPE_FLY_KOOPA:
                         enemy["range"] = 1
                         enemy["range_start"] = int(self.GROUND_Y - random.randint(200, 400))
                         enemy["range_end"] = int(self.GROUND_Y - random.randint(50, 150))
@@ -503,7 +522,7 @@ class GenerateChunk():
 
             x_pos = random.randint(start_x, end_x)
             if random.random() < self.enemies_chance:
-                enemy_type = 1  # Koopa
+                enemy_type = c.ENEMY_TYPE_KOOPA  # Koopa
                 enemy = {
                     "x": int(x_pos),
                     "y": int(height - 40),
