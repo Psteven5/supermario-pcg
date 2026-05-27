@@ -87,7 +87,7 @@ class Level(tools.State):
         self.max_x = 0.0
         self.reward = 0.0
 
-        self.shift_threshold = c.SHIFT_THRESHOLD
+        self.shift_threshold = c.SHIFT_THRESHOLD + c.SCREEN_WIDTH
         self.reset = True
 
     # Function to initialize the level state
@@ -661,7 +661,7 @@ class Level(tools.State):
     def update(self, surface, keys, current_time):
         global max_mario_x
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        
+        print(self.player.rect.x)
         max_mario_x = self.mario_pos + self.player.rect.x
         self.handle_states(keys)  # do move and update state
         # RL PART
