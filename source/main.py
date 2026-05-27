@@ -111,6 +111,7 @@ def main(render):
             gamma=0.99,
             verbose=int(render),
             ent_coef=0.04,
+            device="cuda",
         )
 
         model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
