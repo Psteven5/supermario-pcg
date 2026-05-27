@@ -354,15 +354,14 @@ class GenerateChunk():
     def generate_chunk_brick_enemies(self, bricks_segments):
         enemy_list = self.chunk[c.MAP_ENEMY]
         safe_start_x = c.SCREEN_WIDTH + 100
-        enemy_types = min(self.difficulty, 2)
         
         # Ignore the first few bricks
         if len(bricks_segments) > 2:
             bricks_segments = bricks_segments[2:]
         
         for seg in bricks_segments:
-            start_x = seg[0] + c.BRICK_CHUNK_ENEMY_MARGIN
-            end_x = seg[1] - c.BRICK_CHUNK_ENEMY_MARGIN
+            start_x = seg[0]
+            end_x = seg[1]
             height = seg[2]
             
             # If bricks series too small, skip
@@ -377,15 +376,12 @@ class GenerateChunk():
                     "y": int(height - 40),
                     "direction": 0,
                     "type": enemy_type,
-                    "color": 0,
-                    "num": 1
+                    "color": 1,
+                    "num": 1,
+                    "range": 1,
+                    "range_start": start_x,
+                    "range_end": end_x,
                 }
-
-                # Optional movement behavior
-                if enemy_type == 1:
-                    enemy["range"] = 1
-                    enemy["range_start"] = start_x
-                    enemy["range_end"] = end_x
                 
                 group_index = len(enemy_list)
                 enemy_list.append({str(group_index): [enemy]})
