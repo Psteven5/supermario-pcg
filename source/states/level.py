@@ -49,6 +49,7 @@ from ..tools import keybinding
 
 class EntityType(Enum):
     PLAYER = 0
+    PLAYER_AIR = auto()
     GROUND = auto()
     BRICK = auto()
     BOX = auto()
@@ -74,7 +75,7 @@ class Level(tools.State):
         self.player = None
 
         self.last_x = 0.0
-        self.best_x = 0.0
+        self.best_x = 0
         self.jump_count = 0
         self.top_score = 0
         self.last_time = 0
@@ -559,18 +560,13 @@ class Level(tools.State):
         while len(self.state_queue) < self.state_queue.maxlen:
             self.state_queue.append(state)
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        reward = 0
         dx = self.player.rect.x - last_x
-        if dx <= 0:
-            self.idle += 1
-        else:
-            self.idle = 0
-        reward = ( dx * 0.01
-                 + 0.01
-                 - min(self.idle, 20) * 0.005
+        reward = ( max(0, (self.player.rect.x - self.best_x) * 0.05)
+                 - int(dx <= 0) * 0.01
                  - int(self.player.dead))
+        self.best_x = max(self.best_x, self.player.rect.x)
         self.draw(surface)  # update frame
-        if self.steps >= 10000:
+        if self.steps >= 10000 // self.frame_skip:
             truncated = True
             self.player.dead = True
         else:

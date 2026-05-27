@@ -87,13 +87,13 @@ def main():
         policy=MarioPPOWrapper,
         env=env,
         policy_kwargs=policy_kwargs,
-        learning_rate=1e-4,
-        n_steps=2_048,
+        learning_rate=1e-5,
+        n_steps=2_048 // frame_skip,
         batch_size=64,
-        n_epochs=10,
+        n_epochs=2,
         gamma=0.99,
         verbose=1,
-        ent_coef=0.02,
+        ent_coef=0.04,
     )
 
     model.learn(total_timesteps=1_000_000, callback=eval_callback)
