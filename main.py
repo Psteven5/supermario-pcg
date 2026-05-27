@@ -22,6 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+import random
+import torch
+import numpy as np
+
+torch.random.manual_seed(42)
+random.seed(42)
+np.random.seed(42)
+
 render = False
 
 if not render:
