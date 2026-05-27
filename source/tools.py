@@ -198,9 +198,12 @@ class Control(gym.Env):
                 exit(1)
 
         self.event_loop()
-        state, reward, done, truncated = self.update(keys)
+        result = None
+        while result is None:
+            result = self.update(keys)
         pg.display.update()
 
+        state, reward, done, truncated = result
         return state, reward, done, truncated, {}
 
     def reset(self, seed=None, options=None):

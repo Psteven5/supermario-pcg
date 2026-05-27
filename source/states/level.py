@@ -90,6 +90,7 @@ class Level(tools.State):
         self.jump_count = 0
         self.top_score = 0
         self.last_time = 0
+        self.dx = 0
         self.idle = 0
         self.steps = 0
 
@@ -111,6 +112,7 @@ class Level(tools.State):
         self.prev_reward = 0.0
         self.count = 1
         self.max_x = 0.0
+        self.dx = 0
         self.prev_score = self.game_info[c.SCORE]
         self.reward = 0.0
         self.prev_x = 110.0
@@ -428,7 +430,7 @@ class Level(tools.State):
                 0,
                 self.player.rect.w,
                 self.player.rect.h,
-                self.player.rect.x - self.last_x,
+                self.dx,
                 self.player.y_vel,
                 EntityType.PLAYER,
             )
@@ -559,16 +561,18 @@ class Level(tools.State):
         return self.state_to_tensor(), reward, self.player.dead, truncated
     
     def update_pieter(self, surface, keys, current_time):
+        last_x = self.last_x
         for _ in range(self.frame_skip):
             self.handle_states(keys)  # do move and update state
+            self.dx = self.player.rect.x - self.last_x
+            self.last_x = self.player.rect.x
         state = self.get_state()  # get RL state
         self.state_queue.append(state)
         while len(self.state_queue) < self.state_queue.maxlen:
             self.state_queue.append(state)
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         reward = 0
-        dx = self.player.rect.x - self.last_x
-        self.last_x = self.player.rect.x
+        dx = self.player.rect.x - last_x
         if dx <= 0:
             self.idle += 1
         else:
