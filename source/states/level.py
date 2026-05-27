@@ -49,7 +49,6 @@ from ..tools import keybinding
 
 class EntityType(Enum):
     PLAYER = 0
-    PLAYER_AIR = auto()
     GROUND = auto()
     BRICK = auto()
     BOX = auto()
@@ -70,7 +69,7 @@ class Entity:
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self, rl, num_frames, frame_skip, render):
+    def __init__(self, rl, num_frames, frame_skip, use_macro, render):
         tools.State.__init__(self)
         self.player = None
 
@@ -83,6 +82,7 @@ class Level(tools.State):
         self.idle = 0
         self.steps = 0
         self.render = render
+        self.use_macro = use_macro
 
         self.death_timeout = 0 if rl else 3000
         self.live_change_on_death = 0 if rl else 1
@@ -554,6 +554,11 @@ class Level(tools.State):
 
         return self.state_to_tensor(), reward, self.player.dead, truncated
     
+    def reward_pieter(self, dx):
+        return ( max(0, (self.player.rect.x - self.best_x) * 0.05)
+                 - int(dx <= 0) * 0.01
+                 - int(self.player.dead))
+    
     def update_pieter(self, surface, keys, current_time):
         last_x = self.last_x
         for _ in range(self.frame_skip):
@@ -566,15 +571,14 @@ class Level(tools.State):
             self.state_queue.append(state)
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
         dx = self.player.rect.x - last_x
-        reward = ( max(0, (self.player.rect.x - self.best_x) * 0.05)
-                 - int(dx <= 0) * 0.01
-                 - int(self.player.dead)
-                 + int(self.player.state == c.FLAGPOLE) * 100)
+        reward = self.reward_pieter(dx)
         self.best_x = max(self.best_x, self.player.rect.x)
         if self.render:
             self.draw(surface)  # update frame
         truncated = False
-        if self.player.state != c.FLAGPOLE:
+        if not (self.player.state == c.FLAGPOLE or
+                self.player.state == c.WALK_AUTO or
+                self.player.state == c.IN_CASTLE):
             if self.steps >= 10000 // self.frame_skip:
                 truncated = True
                 self.player.dead = True

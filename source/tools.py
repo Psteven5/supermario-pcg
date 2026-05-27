@@ -35,16 +35,13 @@ from gymnasium import spaces
 
 
 class MacroMove(IntEnum):
-    LEFT = 0
-    RIGHT = auto()
-    JUMP = auto()
-    ACTION = auto()
+    LEFT_ACTION = 0
     LEFT_JUMP = auto()
+    JUMP = auto()
     RIGHT_JUMP = auto()
-    LEFT_ACTION = auto()
-    RIGHT_ACTION = auto()
-    LEFT_ACTION_JUMP = auto()
     RIGHT_ACTION_JUMP = auto()
+    RIGHT_ACTION = auto()
+    RIGHT = auto()
 
 
 # Dictionary defining keybindings for different actions
@@ -84,7 +81,7 @@ class State:
 # Class representing the Control for game states
 class Control(gym.Env):
     def __init__(
-        self, num_frames, render, width=20, height=15, num_features=7, num_actions=10
+        self, num_frames, use_macro, render, width=20, height=15, num_features=7, num_actions=7
     ):
         super().__init__()
 
@@ -96,7 +93,12 @@ class Control(gym.Env):
         )
 
         self.do_render = render
-        self.action_space = spaces.MultiDiscrete([3, 2, 2])
+        self.use_macro = use_macro
+
+        if self.use_macro:
+            self.action_space = spaces.Discrete(num_actions)
+        else:
+            self.action_space = spaces.MultiDiscrete([3, 2, 2])
 
         # Control variables
         self.screen = pg.display.get_surface()
@@ -148,17 +150,57 @@ class Control(gym.Env):
     def step(self, action):
         # init easy_keys
         keys = {}
-        keys[keybinding["left"]] = action[0] == 0
-        keys[keybinding["right"]] = action[0] == 2
-        keys[keybinding["jump"]] = action[1]
+        keys[keybinding["left"]] = False
+        keys[keybinding["right"]] = False
+        keys[keybinding["jump"]] = False
         keys[keybinding["down"]] = False
-        keys[keybinding["action"]] = action[2]
+        keys[keybinding["action"]] = False
+
+        if self.use_macro:
+            match action:
+                case MacroMove.RIGHT:
+                    keys[keybinding["right"]] = True
+
+                case MacroMove.JUMP:
+                    keys[keybinding["jump"]] = True
+
+                case MacroMove.LEFT_ACTION:
+                    keys[keybinding["left"]] = True
+                    keys[keybinding["action"]] = True
+
+                case MacroMove.RIGHT_ACTION:
+                    keys[keybinding["right"]] = True
+                    keys[keybinding["action"]] = True
+
+                case MacroMove.LEFT_JUMP:
+                    keys[keybinding["left"]] = True
+                    keys[keybinding["jump"]] = True
+
+                case MacroMove.RIGHT_JUMP:
+                    keys[keybinding["right"]] = True
+                    keys[keybinding["jump"]] = True
+
+                case MacroMove.RIGHT_ACTION_JUMP:
+                    keys[keybinding["right"]] = True
+                    keys[keybinding["action"]] = True
+                    keys[keybinding["jump"]] = True
+
+                case _:
+                    print("Invalid macro action")
+                    exit(1)
+        else:
+            keys[keybinding["left"]] = action[0] == 0
+            keys[keybinding["right"]] = action[0] == 2
+            keys[keybinding["jump"]] = action[1]
+            keys[keybinding["down"]] = False
+            keys[keybinding["action"]] = action[2]
 
         self.event_loop()
         result = None
         while result is None:
             result = self.update(keys)
-        pg.display.update()
+        if self.do_render:
+            pg.display.update()
 
         state, reward, done, truncated = result
         return state, reward, done, truncated, {}

@@ -32,12 +32,13 @@ from stable_baselines3.common.monitor import Monitor
 from . import constants as c
 from . import setup, tools
 from .states import level, load_screen, main_menu
-from .states.ppo import MarioEncoder, MarioPPOWrapper
+from .states import controller_ppo
+from .states import macro_ppo
 
 
-def create_env(num_frames, frame_skip, render):
+def create_env(num_frames, frame_skip, use_macro, render):
     # Create an instance of the Control class from the 'tools' module
-    game = tools.Control(num_frames, render)
+    game = tools.Control(num_frames, use_macro, render)
 
     rl = True
 
@@ -46,7 +47,7 @@ def create_env(num_frames, frame_skip, render):
         c.MAIN_MENU: main_menu.Menu(),
         c.LOAD_SCREEN: load_screen.LoadScreen(rl),
         # c.LEVEL: level.Level(),
-        c.LEVEL: level.Level(rl, num_frames, frame_skip, render),
+        c.LEVEL: level.Level(rl, num_frames, frame_skip, use_macro, render),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut(),
     }
@@ -65,10 +66,12 @@ def create_env(num_frames, frame_skip, render):
 def main():
     num_frames = 4
     frame_skip = 4
+    use_macro = True
+    render = True
 
     # Create an instance of the Control class from the 'tools' module
-    env = create_env(num_frames, frame_skip, False)
-    eval_env = create_env(num_frames, frame_skip, False)
+    env = create_env(num_frames, frame_skip, use_macro, render)
+    eval_env = create_env(num_frames, frame_skip, use_macro, render)
     eval_callback = EvalCallback(
         eval_env,
         eval_freq=10000,
@@ -78,13 +81,21 @@ def main():
         deterministic=False,
     )
 
+    if use_macro:
+        Encoder = macro_ppo.MarioEncoder
+    else:
+        Encoder = controller_ppo.MarioEncoder
     policy_kwargs = dict(
-        features_extractor_class=MarioEncoder,
+        features_extractor_class=Encoder,
         features_extractor_kwargs=dict(features_dim=128),
     )
 
+    if use_macro:
+        Model = macro_ppo.MarioPPOWrapper
+    else:
+        Model = controller_ppo.MarioPPOWrapper
     model = PPO(
-        policy=MarioPPOWrapper,
+        policy=Model,
         env=env,
         policy_kwargs=policy_kwargs,
         learning_rate=1e-5,
