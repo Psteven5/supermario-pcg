@@ -114,7 +114,8 @@ class Level(tools.State):
                          "boxes": c.CHANCE_BOXES,
                          "enemies": c.CHANCE_ENEMIES,
                          "piranha": c.CHANCE_PIRANHA,
-                         "chunk_bricks": c.CHANCE_BRICKS_CHUNK}
+                         "chunk_bricks": c.CHANCE_BRICKS_CHUNK,
+                         "chunk_split": c.CHANCE_SPLIT_CHUNK}
         generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
         generator.generate_chunk(first=True)
         self.load_map()
@@ -168,6 +169,7 @@ class Level(tools.State):
             chunk_chances["enemies"] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
             chunk_chances["piranha"] = self.generate_chunk_chance(c.END_CHANCE_PIRANHA, c.CHANCE_PIRANHA, k, self.current_chunk)
             chunk_chances["chunk_bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS_CHUNK, c.CHANCE_BRICKS_CHUNK, k, self.current_chunk)
+            chunk_chances["chunk_split"] = self.generate_chunk_chance(c.END_CHANCE_SPLIT_CHUNK, c.CHANCE_SPLIT_CHUNK, k, self.current_chunk)
 
             difficulty = int(1 + self.current_chunk / 2)
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
