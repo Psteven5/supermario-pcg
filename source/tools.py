@@ -207,7 +207,6 @@ class Control(gym.Env):
         return state, reward, done, truncated, {}
 
     def reset(self, seed=None, options=None):
-        print("RESET")
         if not self.first_time:
             self.state.update_game_info()
             self.state.done = True

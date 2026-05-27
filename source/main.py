@@ -63,11 +63,10 @@ def create_env(num_frames, frame_skip, use_macro, render):
     return game
 
 # Define the main function of the script
-def main():
+def main(render):
     num_frames = 4
     frame_skip = 4
     use_macro = False
-    render = False
 
     if use_macro:
         path = "./macro/"
@@ -108,9 +107,9 @@ def main():
         batch_size=64,
         n_epochs=2,
         gamma=0.99,
-        verbose=1,
+        verbose=int(render),
         ent_coef=0.04,
     )
 
-    model.learn(total_timesteps=1_000_000, callback=eval_callback)
+    model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
     model.save(f"{path}final_model")

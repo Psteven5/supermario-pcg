@@ -22,10 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+render = False
+
+if not render:
+    import os
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+
 import pygame as pg
 from source.main import main
 
 # [Corpus; RUN].
 if __name__=='__main__':
-    main()
+    main(render)
     pg.quit()
