@@ -538,15 +538,19 @@ class Level(tools.State):
     
     def update_alex(self, surface, keys, current_time):
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        self.draw(surface)  # update frame
+        if self.render:
+            self.draw(surface)  # update frame
         reward = self.calc_reward_alex(surface, keys, current_time)
         
-        if self.steps >= 10000:
-            truncated = True
-            self.player.dead = True
+        truncated = False
+        if self.player.state != c.FLAGPOLE:
+            if self.steps >= 10000 // self.frame_skip:
+                truncated = True
+                self.player.dead = True
+            else:
+                self.steps += 1
         else:
-            truncated = False
-            self.steps += 1
+            self.player.dead = True
 
         return self.state_to_tensor(), reward, self.player.dead, truncated
     
