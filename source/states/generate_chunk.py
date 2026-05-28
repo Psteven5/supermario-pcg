@@ -121,7 +121,7 @@ class GenerateChunk():
                         height_type_choice = random.randint(0,2)
                         brick_height += self.generate_pipe(height_type_choice)
 
-                    elif self.current_x + c.STAIR_SIZE * c.STAIR_STEPS_MAX < seg[1]: # Stairs
+                    elif self.current_x + c.STAIR_SIZE * (c.STAIR_STEPS_MAX + 1) < seg[1]: # Stairs
                         direction_choice = random.randint(0,1)
                         steps_choice = random.randint(c.STAIR_STEPS_MIN, c.STAIR_STEPS_MAX)
                         self.generate_step(steps_choice, direction_choice)
@@ -258,6 +258,12 @@ class GenerateChunk():
                 enemy["range_start"] = int(range_start)
                 enemy["range_end"] = int(range_end)
 
+            elif enemy_type == c.ENEMY_TYPE_FLY_KOOPA:
+                enemy["range"] = 1
+                enemy["range_start"] = int(self.GROUND_Y - random.randint(200, 400))
+                enemy["range_end"] = int(self.GROUND_Y - random.randint(50, 150))
+                enemy["is_vertical"] = 1
+            
             group_index = len(self.chunk[c.MAP_ENEMY])
             self.chunk[c.MAP_ENEMY].append({str(group_index): [enemy]})
 
@@ -364,7 +370,7 @@ class GenerateChunk():
         self.chunk[c.MAP_PIPE].append({
             "x": self.current_x,
             "y": pipe_top,
-            "width": 82,
+            "width": c.PIPE_WIDTH,
             "height": h,
             "type": 0
         })
@@ -375,11 +381,11 @@ class GenerateChunk():
         base_x = self.current_x
         for i in range(steps):
             step_h = (i + 1) * c.STAIR_SIZE
-            curr_x = base_x + (i * 43) if direction == 0 else base_x + ((steps - i) * 43)
+            curr_x = base_x + (i * c.STAIR_SIZE) if direction == 0 else base_x + ((steps - i) * c.STAIR_SIZE)
             self.chunk[c.MAP_STEP].append({
                 "x": curr_x,
                 "y": self.GROUND_Y - step_h,
-                "width": 43,
+                "width": c.STAIR_SIZE,
                 "height": step_h
             })
 
@@ -481,7 +487,7 @@ class GenerateChunk():
                             distance_to_pipe = pipe['x'] - current_x
                             if abs(distance_to_pipe) < 250:
                                 if distance_to_pipe < 0 and -distance_to_pipe < min_range_start:
-                                    min_range_start = -distance_to_pipe
+                                    min_range_start = -distance_to_pipe + c.PIPE_WIDTH
                                 elif distance_to_pipe < min_range_end:
                                     min_range_end = distance_to_pipe
 
