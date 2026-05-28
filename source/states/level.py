@@ -159,7 +159,7 @@ class Level(tools.State):
             # given an array chances:
             # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
             chunk_chances = dict()
-            k = 0.2 # how quickly we increase the difficulty
+            k = 0.15 # how quickly we increase the difficulty
 
             # difficulty between 1 and 10
             # difficulty ranking:
@@ -182,7 +182,7 @@ class Level(tools.State):
             chunk_chances["enemies"] = (c.CHANCE_ENEMIES + (c.END_CHANCE_ENEMIES - c.CHANCE_ENEMIES) * (norm_diff ** c.WEIGHT_ENEMIES))
             chunk_chances["chunk_bricks"] = (c.CHANCE_BRICKS_CHUNK + (c.END_CHANCE_BRICKS_CHUNK - c.CHANCE_BRICKS_CHUNK) * (norm_diff ** c.WEIGHT_BRICKS_CHUNK))
             chunk_chances["chunk_split"] = (c.CHANCE_SPLIT_CHUNK + (c.END_CHANCE_SPLIT_CHUNK - c.CHANCE_SPLIT_CHUNK) * (norm_diff ** c.WEIGHT_SPLIT_CHUNK))
-            
+
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
             generator.generate_chunk()
             self.load_next_chunk()
