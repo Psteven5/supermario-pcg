@@ -129,14 +129,17 @@ class GenerateChunk():
                         gen_bricks = False # no bricks above stairs
                 
                 # Random chance to place bricks
-                if gen_bricks and random.random() < self.bricks_chance and self.current_x + c.BRICKS_WIDTH_MAX * c.BRICK_SIZE < seg[1]:
+                if (gen_bricks and random.random() < self.bricks_chance
+                    and self.current_x + c.BRICKS_WIDTH_MAX * c.BRICK_SIZE < seg[1]):
                     bricks_width_choice = random.randint(c.BRICKS_WIDTH_MIN, c.BRICKS_WIDTH_MAX)
                     self.generate_brick(brick_height, bricks_width_choice)
                     self.current_x += bricks_width_choice * c.BRICK_SIZE
                     gen_box = False
                 
                 # Random chance to place boxes with powerups
-                if gen_box and random.random() < self.box_chance and self.current_x + c.BRICK_SIZE < seg[1]:
+                if (gen_box and random.random() < self.box_chance
+                    and self.current_x - c.BOX_GAP_MARGIN > seg[0]
+                    and self.current_x + c.BRICK_SIZE + c.BOX_GAP_MARGIN < seg[1]):
                     self.generate_box(brick_height) #Misschien ook width toevoegen zodat het een rijtje is
                     self.current_x += c.BRICK_SIZE
 
@@ -158,6 +161,8 @@ class GenerateChunk():
         # If first chunk (starting position), generate only ground only first
         if first:
             self.generate_ground(c.START_GEN_OFFSET)
+        else:
+            self.generate_ground(c.BRICK_CHUNK_FLOOR_LENGTH)
 
         self.current_x += random.randint(c.BRICK_CHUNK_MIN_GAP, c.BRICK_CHUNK_MAX_GAP)
 
@@ -274,7 +279,7 @@ class GenerateChunk():
                     self.current_x = current_x
 
                     if random.random() < 0.45 and current_x + c.PIPE_WIDTH < end_x:
-                        self.generate_pipe(random.randint(0, 2))
+                        self.generate_pipe(random.randint(0, 1))
                         current_x += c.PIPE_WIDTH + random.randint(80, 140)
                         continue
                     if easy and random.random() < 0.10:
