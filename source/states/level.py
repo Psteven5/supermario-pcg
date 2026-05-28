@@ -102,6 +102,17 @@ class Level(tools.State):
         self.left_bound = 0
         self.mario_pos = 0
 
+        #skill tracking
+        self.chunk_start_time = current_time
+        self.chunk_time = 0
+        self.forward_speed_sum = 0
+        self.forward_speed_frames = 0
+        self.avg_forward_speed = 0
+        self.skill = 1.0
+        self.diff_skill = 0
+        self.recent_chunk_times = []
+        self.recent_chunk_speeds = []
+
         # Initialize lists and overhead information
         self.moving_score_list = []
         self.overhead_info = info.Info(self.game_info, c.LEVEL)
@@ -152,27 +163,53 @@ class Level(tools.State):
         # build next chunk when halfway current chunk
         if self.player.rect.x > self.chunk_size/2 and self.reset: 
             self.reset = False
+            if self.current_chunk > 0:
+                self.chunk_time = (self.current_time - self.chunk_start_time) / 1000 # in seconds
+
+                if self.forward_speed_frames > 0:
+                    self.avg_forward_speed = self.forward_speed_sum / self.forward_speed_frames
+                else:
+                    self.avg_forward_speed = 0
+
+                avg_time = sum(self.recent_chunk_times) / len(self.recent_chunk_times) if self.recent_chunk_times else self.chunk_time
+                avg_speed = sum(self.recent_chunk_speeds) / len(self.recent_chunk_speeds) if self.recent_chunk_speeds else self.avg_forward_speed
+                
+                self.recent_chunk_times.append(self.chunk_time)
+                self.recent_chunk_speeds.append(self.avg_forward_speed)
+                # keep only last 5 chunks
+                self.recent_chunk_times = self.recent_chunk_times[-5:]
+                self.recent_chunk_speeds = self.recent_chunk_speeds[-5:]
+
+                time_score = avg_time / (self.chunk_time + 1e-6)
+                speed_score = self.avg_forward_speed / (avg_speed + 1e-6)
+
+                previous_skill = self.skill
+                self.skill = 0.6*speed_score + 0.4*time_score
+
+                self.diff_skill = self.skill - previous_skill
+
+                print(f"Chunk time: {self.chunk_time:.2f}s, Avg time: {avg_time:.2f}s, Time score: {time_score:.2f}, Avg speed: {avg_speed:.2f}, Speed score: {speed_score:.2f}, Overall skill: {self.skill:.2f}, diff_skill: {self.diff_skill:.2f}")
+
+            self.chunk_start_time = self.current_time
+            self.forward_speed_sum = 0
+            self.forward_speed_frames = 0
+
             self.current_chunk += 1
             self.chunk_size = c.CHUNK_SIZE
 
             # Chances for different level components (between 0.0 and 1.0)
             # given an array chances:
             # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
+
             chunk_chances = dict()
             k = 0.15 # how quickly we increase the difficulty
 
-            # difficulty between 1 and 10
-            # difficulty ranking:
-            # 1 Boxes (should be decreasing by difficulty)
-            # 2 Bricks
-            # 3 PipeStairs
-            # 4 Enemies (increase a lot on difficulty)
-            # 5 Gap
-            # 6 Bricks Chunk
-            # 7 Split Chunk
+            # difficulty between 0 and 5 (base is going from 0 to 5)
+            base = self.get_difficulty(k, self.current_chunk)
+            difficulty = base + self.diff_skill
+            difficulty = np.clip(difficulty, 0, c.MAX_DIFFICULTY)
 
-            difficulty = self.get_difficulty(k, self.current_chunk)
-
+            print(f"Chunk: {self.current_chunk}, Difficulty: {difficulty:.2f}")
             norm_diff = difficulty / 5
 
             chunk_chances["gaps"] = (c.CHANCE_GAP + (c.END_CHANCE_GAP - c.CHANCE_GAP) * (norm_diff ** c.WEIGHT_GAP))
@@ -674,6 +711,9 @@ class Level(tools.State):
     def update(self, surface, keys, current_time):
         global max_mario_x
         self.game_info[c.CURRENT_TIME] = self.current_time = current_time
+        self.forward_speed_sum += max(0, self.player.x_vel)
+        self.forward_speed_frames += 1
+
         #print(self.player.rect.x)
         max_mario_x = self.mario_pos + self.player.rect.x
         self.handle_states(keys)  # do move and update state
