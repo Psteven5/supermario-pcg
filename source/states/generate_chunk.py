@@ -238,7 +238,7 @@ class GenerateChunk():
                 current_x = segment_end
                 if hard:
                     if current_x < end_x:
-                        gap_width = random.randint(c.MIN_GAP_BRICKS, c.MAX_GAP_BRICKS - 1) * c.BRICK_SIZE
+                        gap_width = random.randint(c.SPLIT_CHUNK_MIN_GAP_BRICKS, c.SPLIT_CHUNK_MAX_GAP_BRICKS) * c.BRICK_SIZE
                         current_x = min(current_x + gap_width, end_x)
 
             return segments
@@ -463,13 +463,14 @@ class GenerateChunk():
                         close_to_pipestairs = True
                         break
                 for pipe in self.chunk[c.MAP_PIPE]:
-                    if abs(current_x - pipe['x']) < 100:
+                    if abs(current_x - pipe['x']) < 200:
                         close_to_pipestairs = True
                         break
 
                 # Randomly decide to place a random type of enemy
                 if random.random() < self.enemies_chance and not close_to_pipestairs:
-                    enemy_type = random.randint(0, enemy_types)
+                    #enemy_type = random.randint(0, enemy_types)
+                    enemy_type = 1
                     enemy = {
                         "x": int(current_x),
                         "y": int(self.GROUND_Y - 40),
@@ -488,13 +489,15 @@ class GenerateChunk():
                         for pipe in self.chunk[c.MAP_PIPE]: 
                             distance_to_pipe = pipe['x'] - current_x
                             if abs(distance_to_pipe) < 250:
-                                if distance_to_pipe < 0 and -distance_to_pipe < min_range_start:
-                                    min_range_start = -distance_to_pipe + c.PIPE_WIDTH
+                                if distance_to_pipe < 0:
+                                    pipe_right_edge = distance_to_pipe + c.PIPE_WIDTH
+                                    if pipe_right_edge < 0 and -pipe_right_edge < min_range_start:
+                                        min_range_start = -pipe_right_edge
                                 elif distance_to_pipe < min_range_end:
                                     min_range_end = distance_to_pipe
 
                         enemy["range"] = 1
-                        enemy["range_start"] = int(min(current_x - min_range_start, current_x - random.randint(100, 250)))
+                        enemy["range_start"] = int(max(current_x - min_range_start, current_x - random.randint(100, 250)))
                         enemy["range_end"] = int(min(current_x + min_range_end, current_x + random.randint(100, 250)))
 
                     elif enemy_type == c.ENEMY_TYPE_FLY_KOOPA:
