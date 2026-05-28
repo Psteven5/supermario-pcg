@@ -18,7 +18,7 @@ class GenerateChunk():
         self.chunk_size = chunk_size
         self.GROUND_Y = 538
         self.map_data = None
-        self.difficulty = difficulty
+        self.difficulty = int(difficulty)
 
         # Chances for different level components (between 0.0 and 1.0)
         # given an array chances:

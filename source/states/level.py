@@ -159,17 +159,41 @@ class Level(tools.State):
             # given an array chances:
             # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
             chunk_chances = dict()
-            k = 0.5 # how quickly we increase the chances
+            k = 0.2 # how quickly we increase the difficulty
 
-            chunk_chances["gaps"] = self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk)
-            chunk_chances["pipestairs"] = self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk)
-            chunk_chances["bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk)
-            chunk_chances["boxes"] = self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk)
-            chunk_chances["enemies"] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
-            chunk_chances["chunk_bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS_CHUNK, c.CHANCE_BRICKS_CHUNK, k, self.current_chunk)
-            chunk_chances["chunk_split"] = self.generate_chunk_chance(c.END_CHANCE_SPLIT_CHUNK, c.CHANCE_SPLIT_CHUNK, k, self.current_chunk)
+            # difficulty between 1 and 10
+            # difficulty ranking:
+            # 1 Boxes (should be decreasing by difficulty)
+            # 2 Bricks
+            # 3 PipeStairs
+            # 4 Enemies (increase a lot on difficulty)
+            # 5 Gap
+            # 6 Bricks Chunk
+            # 7 Split Chunk
 
-            difficulty = int(1 + self.current_chunk / 2)
+            difficulty = self.get_difficulty(k, self.current_chunk) #int(1 + self.current_chunk / 2)
+            print("Difficulty: ", difficulty)
+
+            norm_diff = difficulty / 5
+
+            chunk_chances["gaps"] = (c.CHANCE_GAP + (c.END_CHANCE_GAP - c.CHANCE_GAP) * (norm_diff ** c.WEIGHT_GAP))
+            chunk_chances["pipestairs"] = (c.CHANCE_PIPESTAIRS + (c.END_CHANCE_PIPESTAIRS - c.CHANCE_PIPESTAIRS) * (norm_diff ** c.WEIGHT_PIPESTAIRS))
+            chunk_chances["bricks"] = (c.CHANCE_BRICKS + (c.END_CHANCE_BRICKS - c.CHANCE_BRICKS) * (norm_diff ** c.WEIGHT_BRICKS)) #linear increasing
+            chunk_chances["boxes"] = (c.CHANCE_BOXES + (c.END_CHANCE_BOXES - c.CHANCE_BOXES) * (norm_diff ** c.WEIGHT_BOXES)) #decreasing
+            chunk_chances["enemies"] = (c.CHANCE_ENEMIES + (c.END_CHANCE_ENEMIES - c.CHANCE_ENEMIES) * (norm_diff ** c.WEIGHT_ENEMIES))
+            chunk_chances["chunk_bricks"] = (c.CHANCE_BRICKS_CHUNK + (c.END_CHANCE_BRICKS_CHUNK - c.CHANCE_BRICKS_CHUNK) * (norm_diff ** c.WEIGHT_BRICKS_CHUNK))
+            chunk_chances["chunk_split"] = (c.CHANCE_SPLIT_CHUNK + (c.END_CHANCE_SPLIT_CHUNK - c.CHANCE_SPLIT_CHUNK) * (norm_diff ** c.WEIGHT_SPLIT_CHUNK))
+            for key in chunk_chances:
+                print(key, ": ", chunk_chances[key])
+            # chunk_chances["gaps"] = self.generate_chunk_chance(c.END_CHANCE_GAP, c.CHANCE_GAP, k, self.current_chunk)
+            # chunk_chances["pipestairs"] = self.generate_chunk_chance(c.END_CHANCE_PIPESTAIRS, c.CHANCE_PIPESTAIRS, k, self.current_chunk)
+            # chunk_chances["bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS, c.CHANCE_BRICKS, k, self.current_chunk)
+            # chunk_chances["boxes"] = self.generate_chunk_chance(c.END_CHANCE_BOXES, c.CHANCE_BOXES, k, self.current_chunk)
+            # chunk_chances["enemies"] = self.generate_chunk_chance(c.END_CHANCE_ENEMIES, c.CHANCE_ENEMIES, k, self.current_chunk)
+            # chunk_chances["chunk_bricks"] = self.generate_chunk_chance(c.END_CHANCE_BRICKS_CHUNK, c.CHANCE_BRICKS_CHUNK, k, self.current_chunk)
+            # chunk_chances["chunk_split"] = self.generate_chunk_chance(c.END_CHANCE_SPLIT_CHUNK, c.CHANCE_SPLIT_CHUNK, k, self.current_chunk)
+
+            
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
             generator.generate_chunk()
             self.load_next_chunk()
@@ -177,8 +201,11 @@ class Level(tools.State):
             self.reset = True
             self.reset_map(self.chunk_size)
 
-    def generate_chunk_chance(self, end, start, scaler, chunk_num):
-        return end - (end - start) * c.EULER_NUM**(-scaler * chunk_num)
+    def get_difficulty(self, k, chunk_num):
+        return c.MAX_DIFFICULTY * (1 - c.EULER_NUM**(-k * chunk_num))
+
+    # def generate_chunk_chance(self, end, start, scaler, chunk_num):
+    #     return end - (end - start) * c.EULER_NUM**(-scaler * chunk_num)
 
     def load_next_chunk(self, ):
         # TODO: use load_map to change self.map_data to new level from generated new json file?
