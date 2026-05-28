@@ -226,8 +226,8 @@ class GenerateChunk():
             self.generate_chunk_brick_series(upper_y, (end_x - start_x) // c.BRICK_SIZE)
 
         def make_segments(start_x, end_x, hard=False):
-            if not hard:
-                return [[start_x, end_x]]
+            # if not hard:
+            #     return [[start_x, end_x]]
 
             segments = []
             current_x = start_x
@@ -236,14 +236,15 @@ class GenerateChunk():
                 segment_end = min(current_x + segment_length, end_x)
                 segments.append([current_x, segment_end])
                 current_x = segment_end
-
-                if current_x < end_x:
-                    gap_width = random.randint(c.MIN_GAP_BRICKS, c.MAX_GAP_BRICKS - 1) * c.BRICK_SIZE
-                    current_x = min(current_x + gap_width, end_x)
+                if hard:
+                    if current_x < end_x:
+                        gap_width = random.randint(c.MIN_GAP_BRICKS, c.MAX_GAP_BRICKS - 1) * c.BRICK_SIZE
+                        current_x = min(current_x + gap_width, end_x)
 
             return segments
 
-        def add_enemy(x_pos, y_pos, enemy_type, range_start=None, range_end=None):
+        def add_enemy(x_pos, y_pos, range_start=None, range_end=None):
+            enemy_type = random.randint(0,1) # Goomba or koopa
             enemy = {
                 "x": int(x_pos),
                 "y": int(y_pos),
@@ -257,26 +258,16 @@ class GenerateChunk():
                 enemy["range"] = 1
                 enemy["range_start"] = int(range_start)
                 enemy["range_end"] = int(range_end)
-
-            elif enemy_type == c.ENEMY_TYPE_FLY_KOOPA:
-                enemy["range"] = 1
-                enemy["range_start"] = int(self.GROUND_Y - random.randint(200, 400))
-                enemy["range_end"] = int(self.GROUND_Y - random.randint(50, 150))
-                enemy["is_vertical"] = 1
             
             group_index = len(self.chunk[c.MAP_ENEMY])
             self.chunk[c.MAP_ENEMY].append({str(group_index): [enemy]})
 
         def add_easy_bonus(lane):
-            if random.random() > 0.35:
-                return
-
             self.current_x = random.randint(upper_start, max(upper_start, upper_end - c.BRICK_SIZE))
-            height = self.GROUND_Y - (upper_y - 90) if lane == "upper" else random.randint(c.MIN_GEN_HEIGHT, c.MAX_GEN_HEIGHT)
+            height = self.GROUND_Y - (upper_y - 90) if lane == "upper" else random.randint(c.MIN_GEN_HEIGHT, c.MAX_GEN_HEIGHT - c.BRICK_SIZE)
             self.generate_box(height)
 
-        def add_lower_obstacles(segments):
-            enemy_types = min(self.difficulty, 2)
+        def add_lower_obstacles(segments, easy = False):
             for start_x, end_x in segments:
                 current_x = max(start_x + 120, c.SCREEN_WIDTH + 100)
                 while current_x < end_x - 120:
@@ -286,31 +277,35 @@ class GenerateChunk():
                         self.generate_pipe(random.randint(0, 2))
                         current_x += c.PIPE_WIDTH + random.randint(80, 140)
                         continue
+                    if easy and random.random() < 0.10:
+                        add_enemy(current_x, self.GROUND_Y - 40, current_x - 120, current_x + 160)
+                    elif not easy and random.random() < 0.75:
+                        add_enemy(current_x, self.GROUND_Y - 40, current_x - 120, current_x + 160)
 
-                    if random.random() < 0.75:
-                        enemy_type = random.randint(0, enemy_types)
-                        add_enemy(current_x, self.GROUND_Y - 40, enemy_type, current_x - 120, current_x + 160)
 
-                    if random.random() < 0.4 and current_x + c.BRICKS_WIDTH_MAX * c.BRICK_SIZE < end_x:
-                        self.generate_brick(random.randint(c.MIN_GEN_HEIGHT, c.MAX_GEN_HEIGHT), random.randint(2, c.BRICKS_WIDTH_MAX))
+                    current_x += random.randint(200, 300)
 
-                    current_x += random.randint(130, 230)
-
-        def add_upper_obstacles(segments):
-            for start_x, end_x in segments:
+        def add_upper_obstacles(segments, easy = False):
+            for start_x, end_x in segments[:-1]:
                 current_x = start_x + 80
-                while current_x < end_x - 100:
-                    if random.random() < 0.8:
-                        add_enemy(current_x, upper_y - 40, c.ENEMY_TYPE_KOOPA, start_x, end_x)
+                self.chunk[c.MAP_BRICK].append({
+                    "x": self.current_x,
+                    "y": upper_y - c.BRICK_SIZE,
+                    "type": 1
+                })
+                self.chunk[c.MAP_BRICK].append({
+                    "x": self.current_x,
+                    "y": upper_y - c.BRICK_SIZE * 2,
+                    "type": 1
+                })
+                self.current_x = current_x + c.BRICK_SIZE
+                while current_x < end_x - 100:                     
+                    if easy and random.random() < 0.15:
+                        add_enemy(current_x, upper_y - 40, start_x + 80 + (2 * c.BRICK_SIZE), end_x + 80 + (1 * c.BRICK_SIZE))
+                    elif not easy and random.random() < 0.8:
+                        add_enemy(current_x, upper_y - 40, start_x + 80 + (2 * c.BRICK_SIZE), end_x + 80 + (1 * c.BRICK_SIZE))
 
-                    if random.random() < 0.55:
-                        self.current_x = current_x + c.BRICK_SIZE
-                        obstacle_y = upper_y - 95
-                        self.chunk[c.MAP_BRICK].append({
-                            "x": self.current_x,
-                            "y": obstacle_y,
-                            "type": 0
-                        })
+
 
                     current_x += random.randint(120, 210)
 
@@ -326,7 +321,12 @@ class GenerateChunk():
         # A small block lip and one jump block mark the upper path without making stairs.
         self.chunk[c.MAP_BRICK].append({
             "x": entry_x - c.BRICK_SIZE,
-            "y": upper_y + 2 * c.BRICK_SIZE,
+            "y": upper_y + 3 * c.BRICK_SIZE,
+            "type": 0
+        })
+        self.chunk[c.MAP_BRICK].append({
+            "x": entry_x - c.BRICK_SIZE * 2,
+            "y": upper_y + 3 * c.BRICK_SIZE,
             "type": 0
         })
         self.current_x = entry_x
@@ -340,9 +340,11 @@ class GenerateChunk():
 
         if hard_lane == "lower":
             add_lower_obstacles(lower_segments[1:-1])
+            add_upper_obstacles(upper_segments, easy = True)
             add_easy_bonus("upper")
         else:
             add_upper_obstacles(upper_segments)
+            add_lower_obstacles(lower_segments[1:-1], easy=True)
             add_easy_bonus("lower")
 
         self.generate_slider()
