@@ -122,7 +122,7 @@ def main(render):
             model = PPO.load("./controller5/best_model.zip", env=env, device="cuda")
             state, _ = env.reset()
             while True:
-                action, _ = model.predict(state, deterministic=True)
+                action, _ = model.predict(state, deterministic=False)
                 state, _,done,truncated, _ = env.step(action)
 
         else:
