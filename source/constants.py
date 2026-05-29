@@ -21,6 +21,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+# Our constants
+
+CHUNK_SIZE = 4988
 
 __author__ = 'm0rniac'
 
@@ -214,3 +217,28 @@ EXPLODING = 'exploding'
 #IMAGE SHEET
 ENEMY_SHEET = 'smb_enemies_sheet'
 ITEM_SHEET = 'item_objects'
+
+# Constants for generate_chunk.py
+FLOOR_BRICK_SIZE = 43
+MIN_FLOOR_DISTANCE = 5  # Minimum number of bricks for floor
+MAX_FLOOR_DISTANCE = 20 # Maximum number of bricks for floor
+
+MIN_GEN_DISTANCE = 100
+MAX_GEN_DISTANCE = 200
+MIN_GEN_HEIGHT = 200  # for bricks
+MAX_GEN_HEIGHT = 250
+START_GEN_OFFSET = 9*FLOOR_BRICK_SIZE # offset of generation wrt the player starting position
+
+GAP_DISTANCE = 5*FLOOR_BRICK_SIZE
+PIPE_WIDTH = 83
+STAIR_SIZE = 43
+STAIR_STEPS = 4
+BRICKS_WIDTH = 4
+BRICK_SIZE = 43
+
+# Constants for starting chances per chunk
+CHANCE_GAP = 0.3
+CHANCE_PIPESTAIRS = 0.5
+CHANCE_BRICKS = 0.5
+CHANCE_BOXES = 0.1
+CHANCE_ENEMIES = 0.3
