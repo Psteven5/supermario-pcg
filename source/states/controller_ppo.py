@@ -23,32 +23,33 @@ class MarioResidualBlock(nn.Module):
 
 
 class MarioEncoder(BaseFeaturesExtractor):
-    def __init__(self, observation_space, features_dim=128):
+    def __init__(self, observation_space, features_dim=256):
         super().__init__(observation_space, features_dim)
 
+        # In your case, this will dynamically grab the 7 channels
         in_features = observation_space.shape[0]
 
         self.net = nn.Sequential(
-            # Use stride=2 to halve the image size
-            nn.Conv2d(in_features, 32, kernel_size=8, stride=4),
+            # Layer 1: Keep dimensions the same (15x20)
+            nn.Conv2d(in_features, 32, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
 
-            nn.Conv2d(32, 64, kernel_size=4, stride=2),
+            # Layer 2: Halve the dimensions (Output will be 8x10)
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
             nn.ReLU(),
 
+            # Apply your residual blocks to process the 8x10 feature map
             MarioResidualBlock(64),
             MarioResidualBlock(64),
-
-            # Optional: Add a MaxPool here if you want to shrink it further
-            nn.MaxPool2d(2),
 
             nn.Flatten(),
         )
 
-        # Compute shape dynamically by passing in a dummy tensor
+        # Dynamically calculate the flattened size so you never have to guess
         with torch.no_grad():
             dummy_input = torch.zeros(1, *observation_space.shape)
             n_flatten = self.net(dummy_input).shape[1]
+            # For 15x20 input, n_flatten should equal exactly 5120 (64 * 8 * 10)
 
         self.linear = nn.Sequential(
             nn.Linear(n_flatten, features_dim),

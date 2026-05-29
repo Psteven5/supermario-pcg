@@ -42,10 +42,8 @@ from torch.distributions import Categorical
 
 from .. import constants as c
 from .. import setup, tools
-from .helper import evaluate
 from ..tools import keybinding
 from ..components import box, brick, coin, enemy, info, player, powerup, stuff, ground, step
-from .helper import evaluate
 from . import generate_chunk
 
 
