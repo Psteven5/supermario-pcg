@@ -42,10 +42,8 @@ from torch.distributions import Categorical
 
 from .. import constants as c
 from .. import setup, tools
-from .helper import evaluate
 from ..tools import keybinding
 from ..components import box, brick, coin, enemy, info, player, powerup, stuff, ground, step
-from .helper import evaluate
 from . import generate_chunk
 
 
@@ -207,12 +205,12 @@ class Level(tools.State):
     # Function to load the map data from a JSON file
     def load_map(self):
         # # TODO: choose level 1 or pcg
-        # map_file = "level_" + str(self.game_info[c.LEVEL_NUM]) + ".json"
-        # file_path = os.path.join("source", "data", "maps", map_file)
+        map_file = "level_" + str(self.game_info[c.LEVEL_NUM]) + ".json"
+        file_path = os.path.join("source", "data", "maps", map_file)
 
         # TODO: change this function and use it in load_next_chunk?
-        map_file = "chunk.json"
-        file_path = os.path.join("source", "data", "maps", map_file)
+        # map_file = "chunk.json"
+        # file_path = os.path.join("source", "data", "maps", map_file)
         f = open(file_path)
         self.map_data = json.load(f)
         f.close()
