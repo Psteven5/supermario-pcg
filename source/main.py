@@ -36,18 +36,16 @@ from .states import controller_ppo
 from .states import macro_ppo
 import torch
 
-def create_env(num_frames, frame_skip, use_macro, render):
+def create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg):
     # Create an instance of the Control class from the 'tools' module
     game = tools.Control(num_frames, use_macro, render)
-
-    rl = True
 
     # Create a dictionary mapping state names to their respective state instances
     state_dict = {
         c.MAIN_MENU: main_menu.Menu(),
         c.LOAD_SCREEN: load_screen.LoadScreen(rl),
         # c.LEVEL: level.Level(),
-        c.LEVEL: level.Level(rl, num_frames, frame_skip, use_macro, render),
+        c.LEVEL: level.Level(rl, num_frames, frame_skip, use_macro, render, use_pcg),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut(),
     }
@@ -66,21 +64,24 @@ def create_env(num_frames, frame_skip, use_macro, render):
 def main(render):
     num_frames = 4
     frame_skip = 4
-    use_macro = False
-    run_without_learning = False
     runs = 5
+    rl = True
+    use_macro = True 
+    run_without_learning = False
+    use_pcg = False
+    
 
     for i in range(1, runs+1):
         if use_macro:
-            path = f"./macropcg{i}/"
+            path = f"./macro{"pcg" if use_pcg else ""}{i}/"
         else:
-            path = f"./controllerpcg{i}/"
+            path = f"./controller{"pcg" if use_pcg else ""}{i}/"
 
         # Create an instance of the Control class from the 'tools' module
-        env = create_env(num_frames, frame_skip, use_macro, render)
+        env = create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg)
 
         if not run_without_learning:
-            eval_env = create_env(num_frames, frame_skip, use_macro, render)
+            eval_env = create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg)
             eval_callback = EvalCallback(
                 eval_env,
                 eval_freq=10000,
@@ -107,19 +108,19 @@ def main(render):
                 policy=Model,
                 env=env,
                 policy_kwargs=policy_kwargs,
-                learning_rate=1e-5,
-                n_steps=2_048 // frame_skip,
+                learning_rate=3e-4,
+                n_steps=2_048,
                 batch_size=64,
-                n_epochs=2,
+                n_epochs=10,
                 gamma=0.99,
                 verbose=int(render),
-                ent_coef=0.04,
+                ent_coef=0.01,
                 device="cuda",
             )
         
         if run_without_learning:
-            env = create_env(num_frames, frame_skip, use_macro, render)
-            model = PPO.load("./controller5/best_model.zip", env=env, device="cuda")
+            env = create_env(rl, num_frames, frame_skip, use_macro, render , use_pcg)
+            model = PPO.load("./macro1/best_model.zip", env=env, device="cuda")
             state, _ = env.reset()
             while True:
                 action, _ = model.predict(state, deterministic=False)

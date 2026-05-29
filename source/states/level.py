@@ -102,7 +102,8 @@ class Entity:
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self, rl, num_frames, frame_skip, use_macro, render):
+    def __init__(self, rl, num_frames, frame_skip, use_macro, render, use_pcg):
+        self.use_pcg = use_pcg
         tools.State.__init__(self)
         self.player = None
         self.max_x = 0.0
@@ -204,13 +205,13 @@ class Level(tools.State):
 
     # Function to load the map data from a JSON file
     def load_map(self):
-        # # TODO: choose level 1 or pcg
-        map_file = "level_" + str(self.game_info[c.LEVEL_NUM]) + ".json"
-        file_path = os.path.join("source", "data", "maps", map_file)
 
-        # TODO: change this function and use it in load_next_chunk?
-        # map_file = "chunk.json"
-        # file_path = os.path.join("source", "data", "maps", map_file)
+        if not self.use_pcg:
+            map_file = "level_" + str(self.game_info[c.LEVEL_NUM]) + ".json"
+            file_path = os.path.join("source", "data", "maps", map_file)
+        else:
+            map_file = "chunk.json"
+            file_path = os.path.join("source", "data", "maps", map_file)
         f = open(file_path)
         self.map_data = json.load(f)
         f.close()
@@ -849,7 +850,7 @@ class Level(tools.State):
         
         truncated = False
         if self.player.state != c.FLAGPOLE:
-            if self.steps >= 10000 // self.frame_skip:
+            if self.steps >= 10000:
                 truncated = True
                 self.player.dead = True
             else:
