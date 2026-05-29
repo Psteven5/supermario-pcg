@@ -287,7 +287,6 @@ class GenerateChunk():
                     elif not easy and random.random() < 0.75:
                         add_enemy(current_x, self.GROUND_Y - 40, current_x - 120, current_x + 160)
 
-
                     current_x += random.randint(200, 300)
 
         def add_upper_obstacles(segments, easy = False):
@@ -309,8 +308,6 @@ class GenerateChunk():
                         add_enemy(current_x, upper_y - 40, start_x + 80 + (2 * c.BRICK_SIZE), end_x + 80 + (1 * c.BRICK_SIZE))
                     elif not easy and random.random() < 0.8:
                         add_enemy(current_x, upper_y - 40, start_x + 80 + (2 * c.BRICK_SIZE), end_x + 80 + (1 * c.BRICK_SIZE))
-
-
 
                     current_x += random.randint(120, 210)
 
@@ -474,8 +471,7 @@ class GenerateChunk():
 
                 # Randomly decide to place a random type of enemy
                 if random.random() < self.enemies_chance and not close_to_pipestairs:
-                    #enemy_type = random.randint(0, enemy_types)
-                    enemy_type = 1
+                    enemy_type = random.randint(0, enemy_types)
                     enemy = {
                         "x": int(current_x),
                         "y": int(self.GROUND_Y - 40),
@@ -489,7 +485,7 @@ class GenerateChunk():
                     if enemy_type == c.ENEMY_TYPE_KOOPA:
                         # Also determine the distance to a pipe
                         min_range_start = 250  # equals the max values of range_start and range_end
-                        min_range_end = 250    # TODO: declare constants for enemy range?
+                        min_range_end = 250
 
                         for pipe in self.chunk[c.MAP_PIPE]: 
                             distance_to_pipe = pipe['x'] - current_x
@@ -521,7 +517,6 @@ class GenerateChunk():
     
     def generate_chunk_brick_enemies(self, bricks_segments):
         enemy_list = self.chunk[c.MAP_ENEMY]
-        safe_start_x = c.SCREEN_WIDTH + 100
         
         # Ignore the first few bricks
         if len(bricks_segments) > 2:
@@ -554,7 +549,7 @@ class GenerateChunk():
                 group_index = len(enemy_list)
                 enemy_list.append({str(group_index): [enemy]})
         
-        print(enemy_list)
+        #print(enemy_list)
 
 
 
