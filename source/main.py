@@ -95,7 +95,7 @@ def main(render):
             else:
                 Encoder = controller_ppo.MarioEncoder
             policy_kwargs = dict(
-                features_extractor_class=MarioEncoder,
+                features_extractor_class=Encoder,
                 features_extractor_kwargs=dict(features_dim=256), # Try 256 for Mario
                 # The default ActorCritic policy will automatically build the MLP and Action Heads!
             )
