@@ -66,7 +66,7 @@ def main(render):
     frame_skip = 4
     runs = 5
     rl = True
-    use_macro = True 
+    use_macro = False
     run_without_learning = False
     use_pcg = False
     
@@ -111,7 +111,7 @@ def main(render):
                 learning_rate=3e-4,
                 n_steps=2_048,
                 batch_size=64,
-                n_epochs=10,
+                n_epochs=4,
                 gamma=0.99,
                 verbose=int(render),
                 ent_coef=0.01,
