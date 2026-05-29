@@ -95,8 +95,9 @@ def main(render):
             else:
                 Encoder = controller_ppo.MarioEncoder
             policy_kwargs = dict(
-                features_extractor_class=Encoder,
-                features_extractor_kwargs=dict(features_dim=128),
+                features_extractor_class=MarioEncoder,
+                features_extractor_kwargs=dict(features_dim=256), # Try 256 for Mario
+                # The default ActorCritic policy will automatically build the MLP and Action Heads!
             )
 
             if use_macro:
@@ -107,16 +108,16 @@ def main(render):
                 policy=Model,
                 env=env,
                 policy_kwargs=policy_kwargs,
-                learning_rate=1e-5,
-                n_steps=2_048 // frame_skip,
+                learning_rate=3e-4,
+                n_steps=2_048,
                 batch_size=64,
-                n_epochs=2,
+                n_epochs=10,
                 gamma=0.99,
                 verbose=int(render),
-                ent_coef=0.04,
+                ent_coef=0.01,
                 device="cuda",
             )
-        
+
         if run_without_learning:
             env = create_env(num_frames, frame_skip, use_macro, render)
             model = PPO.load("./controller5/best_model.zip", env=env, device="cuda")
@@ -128,8 +129,3 @@ def main(render):
         else:
             model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
             model.save(f"{path}final_model")
-
-           
-        
-        
-
