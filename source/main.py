@@ -123,7 +123,7 @@ def main(render):
             state, _ = env.reset()
             while True:
                 action, _ = model.predict(state, deterministic=True)
-                state, _,done,truncated = env.step(action)
+                state, _,done,truncated, _ = env.step(action)
 
         else:
             model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
