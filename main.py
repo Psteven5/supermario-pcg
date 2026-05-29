@@ -30,7 +30,7 @@ torch.random.manual_seed(42)
 random.seed(42)
 np.random.seed(42)
 
-render = True
+render = False
 
 if not render:
     import os

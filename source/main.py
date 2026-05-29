@@ -67,14 +67,14 @@ def main(render):
     num_frames = 4
     frame_skip = 4
     use_macro = False
-    run_without_learning = True
+    run_without_learning = False
     runs = 5
 
     for i in range(1, runs+1):
         if use_macro:
-            path = f"./macro{i}/"
+            path = f"./macropcg{i}/"
         else:
-            path = f"./controller{i}/"
+            path = f"./controllerpcg{i}/"
 
         # Create an instance of the Control class from the 'tools' module
         env = create_env(num_frames, frame_skip, use_macro, render)
