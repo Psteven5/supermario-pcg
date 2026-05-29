@@ -34,7 +34,7 @@ from . import setup, tools
 from .states import level, load_screen, main_menu
 from .states import controller_ppo
 from .states import macro_ppo
-
+import torch
 
 def create_env(num_frames, frame_skip, use_macro, render):
     # Create an instance of the Control class from the 'tools' module
@@ -67,6 +67,7 @@ def main(render):
     num_frames = 4
     frame_skip = 4
     use_macro = False
+    run_without_learning = True
     runs = 5
 
     for i in range(1, runs+1):
@@ -77,42 +78,58 @@ def main(render):
 
         # Create an instance of the Control class from the 'tools' module
         env = create_env(num_frames, frame_skip, use_macro, render)
-        eval_env = create_env(num_frames, frame_skip, use_macro, render)
-        eval_callback = EvalCallback(
-            eval_env,
-            eval_freq=10000,
-            best_model_save_path=path,
-            log_path=path,
-            n_eval_episodes=5,
-            deterministic=False,
-        )
 
-        if use_macro:
-            Encoder = macro_ppo.MarioEncoder
+        if not run_without_learning:
+            eval_env = create_env(num_frames, frame_skip, use_macro, render)
+            eval_callback = EvalCallback(
+                eval_env,
+                eval_freq=10000,
+                best_model_save_path=path,
+                log_path=path,
+                n_eval_episodes=5,
+                deterministic=False,
+            )
+
+            if use_macro:
+                Encoder = macro_ppo.MarioEncoder
+            else:
+                Encoder = controller_ppo.MarioEncoder
+            policy_kwargs = dict(
+                features_extractor_class=Encoder,
+                features_extractor_kwargs=dict(features_dim=128),
+            )
+
+            if use_macro:
+                Model = macro_ppo.MarioPPOWrapper
+            else:
+                Model = controller_ppo.MarioPPOWrapper
+            model = PPO(
+                policy=Model,
+                env=env,
+                policy_kwargs=policy_kwargs,
+                learning_rate=1e-5,
+                n_steps=2_048 // frame_skip,
+                batch_size=64,
+                n_epochs=2,
+                gamma=0.99,
+                verbose=int(render),
+                ent_coef=0.04,
+                device="cuda",
+            )
+        
+        if run_without_learning:
+            env = create_env(num_frames, frame_skip, use_macro, render)
+            model = PPO.load("./controller5/best_model.zip", env=env, device="cuda")
+            state, _,done,truncated = env.step()
+            while True:
+                action, _ = model.predict(state, deterministic=True)
+                state, _,done,truncated = env.step(action)
+
         else:
-            Encoder = controller_ppo.MarioEncoder
-        policy_kwargs = dict(
-            features_extractor_class=Encoder,
-            features_extractor_kwargs=dict(features_dim=128),
-        )
+            model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
+            model.save(f"{path}final_model")
 
-        if use_macro:
-            Model = macro_ppo.MarioPPOWrapper
-        else:
-            Model = controller_ppo.MarioPPOWrapper
-        model = PPO(
-            policy=Model,
-            env=env,
-            policy_kwargs=policy_kwargs,
-            learning_rate=1e-5,
-            n_steps=2_048 // frame_skip,
-            batch_size=64,
-            n_epochs=2,
-            gamma=0.99,
-            verbose=int(render),
-            ent_coef=0.04,
-            device="cuda",
-        )
+           
+        
+        
 
-        model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
-        model.save(f"{path}final_model")
