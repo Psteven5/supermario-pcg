@@ -120,7 +120,7 @@ def main(render):
         if run_without_learning:
             env = create_env(num_frames, frame_skip, use_macro, render)
             model = PPO.load("./controller5/best_model.zip", env=env, device="cuda")
-            state, _,done,truncated = env.step()
+            state, _ = env.reset()
             while True:
                 action, _ = model.predict(state, deterministic=True)
                 state, _,done,truncated = env.step(action)
