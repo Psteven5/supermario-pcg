@@ -104,6 +104,7 @@ class Entity:
 class Level(tools.State):
     def __init__(self, rl, num_frames, frame_skip, use_macro, render, use_pcg):
         self.use_pcg = use_pcg
+        self.rl = rl
         tools.State.__init__(self)
         self.player = None
         self.max_x = 0.0
@@ -268,7 +269,10 @@ class Level(tools.State):
 
             # difficulty between 0 and 5 (base is going from 0 to 5)
             base = self.get_difficulty(k, self.current_chunk)
-            difficulty = base + self.diff_skill
+            if self.rl:
+                difficulty = base
+            else:
+                difficulty = base + self.diff_skill
             difficulty = np.clip(difficulty, 0, c.MAX_DIFFICULTY)
 
             print(f"Chunk: {self.current_chunk}, Difficulty: {difficulty:.2f}")
