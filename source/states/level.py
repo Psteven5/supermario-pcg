@@ -867,6 +867,12 @@ class Level(tools.State):
     
     def update_pieter(self, surface, keys, current_time):
         last_x = self.last_x
+        if keys[keybinding["jump"]]:
+            if self.jumptimer == 0:
+                self.jumptimer = 2
+        if self.jumptimer > 0:
+            keys[keybinding["jump"]] = True
+            self.jumptimer -= 1
         for _ in range(self.frame_skip):
             self.handle_states(keys)  # do move and update state
             self.dx = self.player.rect.x - self.last_x
@@ -1278,7 +1284,7 @@ class Level(tools.State):
     def update_game_info(self):
         if self.player.dead:
             self.reset = True
-            self.persist[c.LIVES] -= 1
+            # self.persist[c.LIVES] -= 1
 
         if self.persist[c.LIVES] == 0:
             self.next = c.GAME_OVER
