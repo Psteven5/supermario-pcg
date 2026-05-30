@@ -282,10 +282,11 @@ class Level(tools.State):
             chunk_chances["chunk_bricks"] = (c.CHANCE_BRICKS_CHUNK + (c.END_CHANCE_BRICKS_CHUNK - c.CHANCE_BRICKS_CHUNK) * (norm_diff ** c.WEIGHT_BRICKS_CHUNK))
             chunk_chances["chunk_split"] = (c.CHANCE_SPLIT_CHUNK + (c.END_CHANCE_SPLIT_CHUNK - c.CHANCE_SPLIT_CHUNK) * (norm_diff ** c.WEIGHT_SPLIT_CHUNK))
 
-            generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
-            generator.generate_chunk()
-            self.load_next_chunk()
-        if self.viewport.x > self.shift_threshold:
+            if self.use_pcg:
+                generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
+                generator.generate_chunk()
+                self.load_next_chunk()
+        if self.viewport.x > self.shift_threshold and self.use_pcg:
             self.reset = True
             self.reset_map(self.chunk_size)
 
