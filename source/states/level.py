@@ -102,8 +102,9 @@ class Entity:
 
 # Define a class for the level state, which inherits from tools.State
 class Level(tools.State):
-    def __init__(self, rl, num_frames, frame_skip, use_macro, render, use_pcg):
+    def __init__(self, rl, num_frames, frame_skip, use_macro, render, use_pcg, pcg_seed=None):
         self.use_pcg = use_pcg
+        self.pcg_seed = pcg_seed
         self.rl = rl
         tools.State.__init__(self)
         self.player = None
@@ -178,6 +179,8 @@ class Level(tools.State):
                          "chunk_bricks": c.CHANCE_BRICKS_CHUNK,
                          "chunk_split": c.CHANCE_SPLIT_CHUNK}
         if self.use_pcg:
+            if self.pcg_seed is not None:
+                generate_chunk.seed(self.pcg_seed)
             generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
             generator.generate_chunk(first=True)
         self.load_map()
