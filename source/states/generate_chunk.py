@@ -7,10 +7,16 @@
 # box 
 # enemy
 import json
-import random
+import random as rd
 import os
 
 from .. import constants as c
+
+random = rd
+
+def seed(seed):
+    global random
+    random = rd.Random(seed)
 
 
 class GenerateChunk():
