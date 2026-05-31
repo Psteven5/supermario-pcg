@@ -69,6 +69,7 @@ def main(render):
     use_macro = False
     run_without_learning = False
     use_pcg = False
+    pcg_seed = None
     
 
     for i in range(1, runs+1):
@@ -78,7 +79,7 @@ def main(render):
             path = f"./controller{"pcg" if use_pcg else ""}{i}/"
 
         # Create an instance of the Control class from the 'tools' module
-        env = create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg)
+        env = create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg, pcg_seed)
 
         if not run_without_learning:
             eval_env = create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg)
@@ -119,7 +120,7 @@ def main(render):
             )
         
         if run_without_learning:
-            env = create_env(rl, num_frames, frame_skip, use_macro, render , use_pcg)
+            env = create_env(rl, num_frames, frame_skip, use_macro, render , use_pcg, pcg_seed)
             model = PPO.load("./macro1/best_model.zip", env=env, device="cuda")
             state, _ = env.reset()
             while True:
