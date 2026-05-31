@@ -177,8 +177,9 @@ class Level(tools.State):
                          "enemies": c.CHANCE_ENEMIES,
                          "chunk_bricks": c.CHANCE_BRICKS_CHUNK,
                          "chunk_split": c.CHANCE_SPLIT_CHUNK}
-        generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
-        generator.generate_chunk(first=True)
+        if self.use_pcg:
+            generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances)
+            generator.generate_chunk(first=True)
         self.load_map()
         self.setup_background()
         self.setup_maps()
@@ -897,7 +898,7 @@ class Level(tools.State):
         if not (self.player.state == c.FLAGPOLE or
                 self.player.state == c.WALK_AUTO or
                 self.player.state == c.IN_CASTLE):
-            if self.steps >= 10000 // self.frame_skip:
+            if self.steps >= 10000:
                 truncated = True
                 self.player.dead = True
             else:
