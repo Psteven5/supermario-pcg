@@ -823,6 +823,8 @@ class Level(tools.State):
         return self.state_to_tensor(), reward, self.player.dead, truncated
 
     def update(self, surface, keys, current_time):
+        self.forward_speed_sum += max(0, self.player.x_vel)
+        self.forward_speed_frames += 1
         return self.update_pieter(surface, keys, current_time)
         # return self.update_alex(surface, keys, current_time)
 
