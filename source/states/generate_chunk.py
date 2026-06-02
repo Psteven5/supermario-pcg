@@ -102,7 +102,7 @@ class GenerateChunk():
             # Random chance to place a gap
             if self.current_x < target_width - c.MAX_GAP_DISTANCE:
                 if random.random() < self.gaps_chance:                    
-                    gap_distance_choice = random.randint(c.MIN_GAP_BRICKS, max(c.MIN_GAP_BRICKS + self.difficulty, c.MAX_GAP_BRICKS))
+                    gap_distance_choice = random.randint(c.MIN_GAP_BRICKS, min(c.MIN_GAP_BRICKS + self.difficulty, c.MAX_GAP_BRICKS))
                     self.current_x += gap_distance_choice * c.BRICK_SIZE
                     new_start_x = ground_segments[-1][1] + gap_distance_choice*c.BRICK_SIZE
                     ground_segments.append([new_start_x, new_start_x])
