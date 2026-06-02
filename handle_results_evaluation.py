@@ -6,6 +6,7 @@ import numpy as np
 repetitions = 5
 target_length = 10_000  # max 10,000 timesteps
 
+ignore = ["controller2"]
 
 def get_results(file: Path) -> dict[str, np.ndarray]:
     e = np.load(file)
@@ -34,6 +35,8 @@ seeds.sort()
 results = {}
 for file in evaluation_path.iterdir():
     model = file.name.split("_")[0]
+    if model in ignore:
+        continue
     seed = int(file.name.split("_")[1].split(".")[0])
     lvl = seeds.index(seed)
     if lvl not in results:
