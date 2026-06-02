@@ -255,7 +255,7 @@ class Level(tools.State):
 
                 self.diff_skill = self.skill - previous_skill
 
-                print(f"Chunk time: {self.chunk_time:.2f}s, Avg time: {avg_time:.2f}s, Time score: {time_score:.2f}, Avg speed: {avg_speed:.2f}, Speed score: {speed_score:.2f}, Overall skill: {self.skill:.2f}, diff_skill: {self.diff_skill:.2f}")
+                print(f"Chunk time: {self.chunk_time:.2f}s, Avg time: {avg_time:.2f}s, Time score: {time_score:.2f}, Avg speed: {avg_speed:.2f}, Player speed: {self.avg_forward_speed:.2f}, Speed score: {speed_score:.2f}, Overall skill: {self.skill:.2f}, diff_skill: {self.diff_skill:.2f}")
 
             self.chunk_start_time = self.current_time
             self.forward_speed_sum = 0
@@ -808,12 +808,12 @@ class Level(tools.State):
         self.best_x = max(self.best_x, self.player.rect.x)
         if self.render:
             self.draw(surface)  # update frame
-            print(reward)
+            #print(reward)
         truncated = False
         if not (self.player.state == c.FLAGPOLE or
                 self.player.state == c.WALK_AUTO or
                 self.player.state == c.IN_CASTLE):
-            if self.steps >= 10000:
+            if self.steps >= 10000 and self.rl:
                 truncated = True
                 self.player.dead = True
             else:
