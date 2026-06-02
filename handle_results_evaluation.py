@@ -6,7 +6,7 @@ import numpy as np
 repetitions = 5
 target_length = 10_000  # max 10,000 timesteps
 
-ignore = ["controller2"]
+ignore = ["controller2", "macropcg4"]
 
 def get_results(file: Path) -> dict[str, np.ndarray]:
     e = np.load(file)

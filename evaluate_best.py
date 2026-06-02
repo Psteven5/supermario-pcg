@@ -10,7 +10,7 @@ torch.random.manual_seed(42)
 random.seed(42)
 np.random.seed(42)
 
-best_models = ["controller2", "controllerpcg1", "macro2", "macropcg4", "controller3"]
+best_models = ["controller3", "controllerpcg1", "macro2", "macropcg3"]
 num_levels = 5
 
 render = True
@@ -33,11 +33,5 @@ if __name__=='__main__':
             use_macro = model.startswith("macro")
             res = evaluate(render, num_frames, frame_skip, 5, rl, use_macro, use_pcg, pcg_seed, model, False)
             np.save(f"evaluation/{model}_{pcg_seed}.npy", res)
-
-    for model in best_models:
-        for pcg_seed in pcg_seeds:
-            use_macro = model.startswith("macro")
-            res = evaluate(render, num_frames, frame_skip, 1, rl, use_macro, use_pcg, pcg_seed, model, True)
-            np.save(f"evaluation_determ/{model}_{pcg_seed}.npy", res)
 
     pg.quit()
