@@ -28,6 +28,7 @@ import pygame as pg
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
+import numpy as np
 
 from . import constants as c
 from . import setup, tools
@@ -130,3 +131,39 @@ def main(render):
         else:
             model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
             model.save(f"{path}final_model")
+
+
+def evaluate(
+    render: bool,
+    num_frames: int,
+    frame_skip: int,
+    runs: int,
+    rl: bool,
+    use_macro: bool,
+    use_pcg: bool,
+    pcg_seed: int | None,
+    model: str,
+) -> np.ndarray:
+    rewards_total = []
+    for _ in range(runs):
+        rewards = []
+        env = create_env(rl, num_frames, frame_skip, use_macro, render , use_pcg, pcg_seed)
+        model = PPO.load(f"./{model}/best_model.zip", env=env, device="cuda")
+        state, _ = env.reset()
+        done = False
+        truncated = False
+        while not done and not truncated:
+            action, _ = model.predict(state, deterministic=False)
+            state, reward, done, truncated, _ = env.step(action)
+            rewards.append(reward)
+
+        rewards_total.append(rewards)
+
+
+    # pad shorter rows with 0
+    max_len = max(len(row) for row in rewards_total)
+    padded_rewards_total = [row + [0] * (max_len - len(row)) for row in rewards_total]
+
+    rewards_total_T = np.asarray(padded_rewards_total).T
+
+    return rewards_total_T

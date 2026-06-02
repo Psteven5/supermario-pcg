@@ -228,7 +228,7 @@ class Level(tools.State):
 
     def check_for_chunk(self):
         # build next chunk when halfway current chunk
-        if self.player.rect.x > self.chunk_size/2 and self.reset: 
+        if self.player.rect.x > self.chunk_size/2 and self.reset:
             self.reset = False
             if self.current_chunk > 0:
                 self.chunk_time = (self.current_time - self.chunk_start_time) / 1000 # in seconds
@@ -240,7 +240,7 @@ class Level(tools.State):
 
                 avg_time = sum(self.recent_chunk_times) / len(self.recent_chunk_times) if self.recent_chunk_times else self.chunk_time
                 avg_speed = sum(self.recent_chunk_speeds) / len(self.recent_chunk_speeds) if self.recent_chunk_speeds else self.avg_forward_speed
-                
+
                 self.recent_chunk_times.append(self.chunk_time)
                 self.recent_chunk_speeds.append(self.avg_forward_speed)
                 # keep only last 5 chunks
@@ -338,12 +338,12 @@ class Level(tools.State):
                 self.ground_group.add(collider)
                 for y in range(item["y"], item["y"] + item["height"], 43):
                     for x in range(item["x"], item["x"] + item["width"], 43):
-                        self.ground_group.add(ground.Ground(x, y))              
-        
+                        self.ground_group.add(ground.Ground(x, y))
+
         if c.MAP_PIPE in map_data:
             for item in map_data[c.MAP_PIPE]:
                 self.pipe_group.add(stuff.Pipe(item["x"], item["y"], item["width"], item["height"], item["type"]))
-                
+
         if c.MAP_COIN in map_data:
             for item in map_data[c.MAP_COIN]:
                 self.static_coin_group.add(coin.StaticCoin(item["x"], item["y"]))
@@ -351,14 +351,14 @@ class Level(tools.State):
         if c.MAP_BRICK in map_data:
             for item in map_data[c.MAP_BRICK]:
                 brick.create_brick(self.brick_group, item, self)
-        
+
         if c.MAP_BOX in map_data:
             for item in map_data[c.MAP_BOX]:
                 if item["type"] == c.TYPE_COIN:
                     self.box_group.add(box.Box(item["x"], item["y"], item["type"], self.coin_group))
                 else:
                     self.box_group.add(box.Box(item["x"], item["y"], item["type"], self.powerup_group))
-        
+
         if c.MAP_ENEMY in map_data:
             for data in map_data[c.MAP_ENEMY]:
                 group = pg.sprite.Group()
@@ -366,7 +366,7 @@ class Level(tools.State):
                     for item in data[key]:
                         group.add(enemy.create_enemy(item, self))
                 self.enemy_group_list.append(group)
-        
+
         if c.MAP_CHECKPOINT in map_data:
             for data in map_data[c.MAP_CHECKPOINT]:
                 if c.ENEMY_GROUPID in data:
@@ -377,9 +377,9 @@ class Level(tools.State):
                     map_index = data[c.MAP_INDEX]
                 else:
                     map_index = 0
-                self.checkpoint_group.add(stuff.Checkpoint(data["x"], data["y"], data["width"], 
+                self.checkpoint_group.add(stuff.Checkpoint(data["x"], data["y"], data["width"],
                     data["height"], data["type"], enemy_groupid, map_index))
-        
+
         if c.MAP_FLAGPOLE in map_data:
             for item in map_data[c.MAP_FLAGPOLE]:
                 if item["type"] == c.FLAGPOLE_TYPE_FLAG:
@@ -390,15 +390,15 @@ class Level(tools.State):
                 else:
                     sprite = stuff.PoleTop(item["x"], item["y"])
                 self.flagpole_group.add(sprite)
-        
+
         if c.MAP_STEP in map_data:
             for item in map_data[c.MAP_STEP]:
                 collider = stuff.Collider(item["x"], item["y"], item["width"], item["height"], c.MAP_STEP)
-                collider.image = pg.Surface((collider.rect.width, collider.rect.height))   
+                collider.image = pg.Surface((collider.rect.width, collider.rect.height))
                 self.step_group.add(collider)
                 for y in range(item["y"], item["y"] + item["height"], 43):
                     for x in range(item["x"], item["x"] + item["width"], 43):
-                        self.step_group.add(step.Step(x, y)) 
+                        self.step_group.add(step.Step(x, y))
 
         if c.MAP_SLIDER in map_data:
             for item in map_data[c.MAP_SLIDER]:
@@ -408,7 +408,7 @@ class Level(tools.State):
                     vel = 1
                 self.slider_group.add(stuff.Slider(item["x"], item["y"], item["num"],
                     item["direction"], item["range_start"], item["range_end"], vel))
-        
+
         self.ground_step_pipe_group.add(
             self.pipe_group,
             self.ground_group,
@@ -425,10 +425,10 @@ class Level(tools.State):
             for sprite in group:
                 if sprite.rect.right < limit:
                     sprite.kill()
-    def reset_map(self, offset):        
+    def reset_map(self, offset):
         # Shift player
         self.mario_pos += self.player.rect.x
-        self.player.rect.x -= offset 
+        self.player.rect.x -= offset
         self.last_x -= offset
         self.best_x -= offset
         # Shift viewpoint
@@ -445,8 +445,8 @@ class Level(tools.State):
                     self.powerup_group, self.coin_group, self.brickpiece_group,
                     self.checkpoint_group, self.flagpole_group, self.dying_group]:
             for sprite in group:
-                sprite.rect.x -= offset       
-        
+                sprite.rect.x -= offset
+
         for group in self.enemy_group_list:
             for sprite in group:
                 if sprite not in self.enemy_group:
@@ -780,108 +780,20 @@ class Level(tools.State):
 
         return torch.from_numpy(state_np)
 
-    def calc_reward_alex(self, surface, keys, current_time):
-        # force longer minimum jump
-        if keys[keybinding["jump"]]:
-            if self.jumptimer == 0:
-                self.jumptimer = 10
-        if self.jumptimer > 0:
-            keys[keybinding["jump"]] = True
-            self.jumptimer -= 1
-
-        self.handle_states(keys)  # do move and update state
-        state = self.get_state()  # get RL state
-        self.state_queue.append(state)
-        while len(self.state_queue) < self.state_queue.maxlen:
-            self.state_queue.append(state)
-        
-        use_max_x = False
-        if use_max_x:
-            # change max x here using offset when teleported to beginning
-            # self.max_x = ...
-
-            # detect improvement of max x
-            improved = False
-            if self.player.rect.x > self.max_x:
-                improved = True
-            if improved: # +r when improving
-                self.reward = self.player.rect.x - self.max_x
-            else: # -r when not
-                self.reward = -0.1
-            
-            # # small attraction to the right
-            # self.reward += self.player.x_vel * 0.00001
-
-        else: # use dx instead
-            # use dx as reward, more to the right: +r, more left -r
-            d_x = self.player.rect.x - self.prev_x
-            self.prev_x = self.player.rect.x
-            self.reward = d_x - 0.1
-
-        # # +r for jumping when standing still
-        # if d_x == 0 and self.player.rect.y > self.prev_y:
-        #     self.reward += (self.player.rect.y - self.prev_y) * 0.5 
-        #     print("hier")
-        # self.prev_y = self.player.rect.y
-
-        # # use score as well +r when added score
-        # d_score = self.game_info[c.SCORE] - self.prev_score
-        # self.prev_score = self.game_info[c.SCORE]
-        # self.reward += d_score * 0.02
-
-        # print reward trace
-        if self.reward == self.prev_reward:
-            self.count +=1
-            print("                       ", end = "\r")
-            print(f"{self.reward} x {self.count}", end = "\r")
-        else:
-            self.count = 1
-            print()
-            print(f"{self.reward} x {self.count}", end = "\r")
-        
-        # -r when player dies
-        if self.player.dead:
-            print()
-            print("dead")
-            self.reward = -15
-            print(self.reward)
-
-        self.prev_reward = self.reward # update prev_reward
-        self.max_x = max(self.max_x, self.player.rect.x) # update max x
-        
-        return self.reward
-    
-    def update_alex(self, surface, keys, current_time):
-        self.game_info[c.CURRENT_TIME] = self.current_time = current_time
-        if self.render:
-            self.draw(surface)  # update frame
-        reward = self.calc_reward_alex(surface, keys, current_time)
-        
-        truncated = False
-        if self.player.state != c.FLAGPOLE:
-            if self.steps >= 10000:
-                truncated = True
-                self.player.dead = True
-            else:
-                self.steps += 1
-        else:
-            self.player.dead = True
-
-        return self.state_to_tensor(), reward, self.player.dead, truncated
-    
     def reward_pieter(self, dx):
         return ( max(0, (self.player.rect.x - self.best_x) * 0.05)
                  - int(dx <= 0) * 0.01
                  - int(self.player.dead))
-    
+
     def update_pieter(self, surface, keys, current_time):
         last_x = self.last_x
-        if keys[keybinding["jump"]]:
-            if self.jumptimer == 0:
-                self.jumptimer = 2
-        if self.jumptimer > 0:
-            keys[keybinding["jump"]] = True
-            self.jumptimer -= 1
+        if self.rl:
+            if keys[keybinding["jump"]]:
+                if self.jumptimer == 0:
+                    self.jumptimer = 2
+            if self.jumptimer > 0:
+                keys[keybinding["jump"]] = True
+                self.jumptimer -= 1
         for _ in range(self.frame_skip):
             self.handle_states(keys)  # do move and update state
             self.dx = self.player.rect.x - self.last_x
@@ -986,7 +898,7 @@ class Level(tools.State):
             ):
                 mushroom_box = box.Box(checkpoint.rect.x, checkpoint.rect.bottom - 40,
                                 c.TYPE_LIFEMUSHROOM, self.powerup_group)
-                
+
                 mushroom_box.start_bump(self.moving_score_list)
                 self.box_group.add(mushroom_box)
                 self.player.y_vel = 7
@@ -1319,7 +1231,7 @@ class Level(tools.State):
                 self.viewport.x += round(self.player.x_vel)
             elif self.player.x_vel < 0 and self.viewport.x > self.left_bound:
                 self.viewport.x += round(self.player.x_vel)
-        
+
         self.left_bound = max(self.left_bound, self.viewport.x - 100)
 
     def move_to_dying_group(self, group, sprite):
@@ -1338,13 +1250,13 @@ class Level(tools.State):
         # Repeat the background image infinitely
         bg_width = self.background.get_width()
         rel_x = (self.bg_offset + self.viewport.x) % bg_width
-        
+
         self.level.blit(self.background, (int(self.viewport.x - rel_x), 0))
         self.level.blit(self.background, (int(self.viewport.x - rel_x + bg_width), 0))
 
         #for x in range(0, self.level.get_width(), bg_width):
         #    self.level.blit(self.background, (x, 0))
-        
+
         self.ground_group.draw(self.level)
         self.ground_step_pipe_group.draw(self.level)
         self.powerup_group.draw(self.level)
