@@ -36,7 +36,7 @@ from .states import controller_ppo
 from .states import macro_ppo
 import torch
 
-def create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg):
+def create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg, pcg_seed):
     # Create an instance of the Control class from the 'tools' module
     game = tools.Control(num_frames, use_macro, render)
 
@@ -45,7 +45,7 @@ def create_env(rl, num_frames, frame_skip, use_macro, render, use_pcg):
         c.MAIN_MENU: main_menu.Menu(),
         c.LOAD_SCREEN: load_screen.LoadScreen(rl),
         # c.LEVEL: level.Level(),
-        c.LEVEL: level.Level(rl, num_frames, frame_skip, use_macro, render, use_pcg),
+        c.LEVEL: level.Level(rl, num_frames, frame_skip, use_macro, render, use_pcg, pcg_seed),
         c.GAME_OVER: load_screen.GameOver(),
         c.TIME_OUT: load_screen.TimeOut(),
     }
@@ -70,7 +70,7 @@ def main(render):
     run_without_learning = False
     use_pcg = False
     pcg_seed = None
-    
+
 
     for i in range(1, runs+1):
         if use_macro:
@@ -118,7 +118,7 @@ def main(render):
                 ent_coef=0.01,
                 device="cuda",
             )
-        
+
         if run_without_learning:
             env = create_env(rl, num_frames, frame_skip, use_macro, render , use_pcg, pcg_seed)
             model = PPO.load("./macro1/best_model.zip", env=env, device="cuda")
@@ -130,8 +130,3 @@ def main(render):
         else:
             model.learn(total_timesteps=1_000_000, callback=eval_callback, progress_bar=True)
             model.save(f"{path}final_model")
-
-           
-        
-        
-

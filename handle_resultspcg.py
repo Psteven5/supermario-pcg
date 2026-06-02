@@ -20,8 +20,8 @@ def get_results(agent: str) -> dict[str, np.ndarray]:
     return {"timesteps": timesteps,"mean": mean_r, "std": std_r}
 
 results = {}
-results["macro"] = get_results("macro")
-results["controller"] = get_results("controller")
+results["macro pcg"] = get_results("macropcg")
+results["controller pcg"] = get_results("controllerpcg")
 
 for controller, values in results.items():
     plt.plot(values["timesteps"], values["mean"], label=controller)
@@ -32,4 +32,4 @@ plt.ylabel("Mean Reward")
 plt.title("Evaluation Rewards")
 plt.legend()
 plt.grid(True)
-plt.savefig("results.png")
+plt.savefig("results_pcg.png")
