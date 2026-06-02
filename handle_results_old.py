@@ -31,7 +31,7 @@ for controller, values in results.items():
 
 plt.xlabel("Timesteps")
 plt.ylabel("Mean Reward")
-plt.title("Evaluation Rewards")
+plt.title("Evaluation Rewards Macro")
 plt.legend()
 plt.grid(True)
 plt.savefig("results_macro.png")
@@ -51,7 +51,7 @@ for controller, values in results.items():
 
 plt.xlabel("Timesteps")
 plt.ylabel("Mean Reward")
-plt.title("Evaluation Rewards")
+plt.title("Evaluation Rewards Controller")
 plt.legend()
 plt.grid(True)
 plt.savefig("results_controller.png")
