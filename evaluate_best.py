@@ -1,6 +1,9 @@
 import random
 import torch
 import numpy as np
+from pathlib import Path
+
+Path("evaluation").mkdir(exist_ok=True)
 
 torch.random.manual_seed(42)
 random.seed(42)
@@ -29,6 +32,6 @@ if __name__=='__main__':
         for pcg_seed in pcg_seeds:
             use_macro = model.startswith("macro")
             res = evaluate(render, num_frames, frame_skip, runs, rl, use_macro, use_pcg, pcg_seed, model)
-            np.save(f"{model}_{pcg_seed}.npz", res)
+            np.save(f"evaluation/{model}_{pcg_seed}.npy", res)
 
     pg.quit()
