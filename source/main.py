@@ -143,6 +143,7 @@ def evaluate(
     use_pcg: bool,
     pcg_seed: int | None,
     model_name: str,
+    deterministic: bool,
 ) -> np.ndarray:
     rewards_total = []
     for _ in range(runs):
@@ -153,7 +154,7 @@ def evaluate(
         done = False
         truncated = False
         while not done and not truncated:
-            action, _ = model.predict(state, deterministic=False)
+            action, _ = model.predict(state, deterministic=deterministic)
             state, reward, done, truncated, _ = env.step(action)
             rewards.append(reward)
 
