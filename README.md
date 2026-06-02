@@ -29,11 +29,27 @@ The following settings are present in `./source/main.py`:
     use_pcg = False                # If False, level 1-1 is loaded. If True, the PCG level is generated.
     pcg_seed = None                # Set a seed for the PCG speciffically, making PCG deterministic. This only happens when the value is not None.
 
+For example: to train the macropcg agent, change the above settings to: `use_macro=True` and `use_pcg=True`.
+
+
+To evaluate specific agents on different PCG levels, the models and parameters can be chosen inside `./evaluate_best.py` and the evaluation can be run using:
+```bash
+uv run evaluate_best.py
+```
+
+All python files beginning with `handle_results` can be run to create various plots based on the results of `main.py` or `evaluate_best.py`.
+For example:
+```bash
+uv run handle_results_old.py
+```
 ### In order to playtest the PCG:
+
+Set `render=True` in `./main.py`.
+
+Afterwards use the command:
 ```bash
 uv run main.py
 ```
-Set `render=True` in `./main.py`.
 
 In order to playtest the PCG aspect of the game the following settings are used in `./source/main.py`:
 
@@ -46,9 +62,4 @@ In order to playtest the PCG aspect of the game the following settings are used 
     use_pcg = True                 # If False, level 1-1 is loaded. If True, the PCG level is generated.
     pcg_seed = None                # Set a seed for the PCG speciffically, making PCG deterministic. This only happens when the value is not None.
 
-To evaluate specific agents on different PCG levels, the models and parameters can be chosen inside `./evaluate_best.py` and the evaluation can be run using:
-```bash
-uv run evaluate_best.py
-```
 
-All python files beginning with `handle_results*.py` can be run to create various plots based on the results of `main.py` or `evaluate_best.py`
