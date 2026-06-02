@@ -808,7 +808,7 @@ class Level(tools.State):
         self.best_x = max(self.best_x, self.player.rect.x)
         if self.render:
             self.draw(surface)  # update frame
-            #print(reward)
+            print(reward)
         truncated = False
         if not (self.player.state == c.FLAGPOLE or
                 self.player.state == c.WALK_AUTO or
