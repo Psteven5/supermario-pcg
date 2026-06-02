@@ -29,6 +29,17 @@ The following settings are present in `./source/main.py`:
     use_pcg = False                # If False, level 1-1 is loaded. If True, the PCG level is generated.
     pcg_seed = None                # Set a seed for the PCG speciffically, making PCG deterministic. This only happens when the value is not None.
 
+In order to playtest the PCG aspect of the game the following settings are used:
+
+    num_frames = 4                 # setting for neural network, determine how many frames are given at the timestep to the agent.
+    frame_skip = 1                 # determine how many (game) frames are skipped in between timesteps.
+    runs = 5                       # how many repetitions per training of RL agent.
+    rl = False                     # If True, the player is not able to give inputs and the RL agents are trained. If false, the player can play the game.
+    use_macro = False              # determine if the macro RL agent is used or the controll RL agent.
+    run_without_learning = False   # If true, the best macro1 model runs without training (demonstration). 
+    use_pcg = True                 # If False, level 1-1 is loaded. If True, the PCG level is generated.
+    pcg_seed = None                # Set a seed for the PCG speciffically, making PCG deterministic. This only happens when the value is not None.
+
 To evaluate specific agents on different PCG levels, the models and parameters can be chosen inside `./evaluate_best.py` and the evaluation can be run using:
 ```bash
 uv run evaluate_best.py
