@@ -22,3 +22,5 @@ To evaluate specific agents on different PCG levels, the models and parameters c
 ```bash
 uv run evaluate_best.py
 ```
+
+All python files beginning with `handle_results*.py` can be run to create various plots based on the results of `main.py` or `evaluate_best.py`
