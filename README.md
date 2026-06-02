@@ -12,7 +12,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 # How to run the project
-To run the agent training:
+### To run the agent training:
 ```bash
 uv run main.py
 ```
@@ -29,7 +29,13 @@ The following settings are present in `./source/main.py`:
     use_pcg = False                # If False, level 1-1 is loaded. If True, the PCG level is generated.
     pcg_seed = None                # Set a seed for the PCG speciffically, making PCG deterministic. This only happens when the value is not None.
 
-In order to playtest the PCG aspect of the game the following settings are used:
+### In order to playtest the PCG:
+```bash
+uv run main.py
+```
+Set `render=True` in `./main.py`.
+
+In order to playtest the PCG aspect of the game the following settings are used in `./source/main.py`:
 
     num_frames = 4                 # setting for neural network, determine how many frames are given at the timestep to the agent.
     frame_skip = 1                 # determine how many (game) frames are skipped in between timesteps.
