@@ -1,4 +1,4 @@
-# Super Mario Bros PCG
+# Super Marios Bros PCG
 
 # Requirements
 The uv command:
