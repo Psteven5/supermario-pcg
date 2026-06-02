@@ -30,4 +30,5 @@ if __name__=='__main__':
             use_macro = model.startswith("macro")
             res = evaluate(render, num_frames, frame_skip, runs, rl, use_macro, use_pcg, pcg_seed, model)
             np.save(f"{model}_{pcg_seed}.npz", res)
-            pg.quit()
+
+    pg.quit()

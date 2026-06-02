@@ -142,13 +142,13 @@ def evaluate(
     use_macro: bool,
     use_pcg: bool,
     pcg_seed: int | None,
-    model: str,
+    model_name: str,
 ) -> np.ndarray:
     rewards_total = []
     for _ in range(runs):
         rewards = []
         env = create_env(rl, num_frames, frame_skip, use_macro, render , use_pcg, pcg_seed)
-        model = PPO.load(f"./{model}/best_model.zip", env=env, device="cuda")
+        model = PPO.load(f"./{model_name}/best_model.zip", env=env, device="cuda")
         state, _ = env.reset()
         done = False
         truncated = False
