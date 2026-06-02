@@ -4,6 +4,7 @@ import numpy as np
 from pathlib import Path
 
 Path("evaluation").mkdir(exist_ok=True)
+Path("evaluation_determ").mkdir(exist_ok=True)
 
 torch.random.manual_seed(42)
 random.seed(42)
@@ -15,7 +16,6 @@ num_levels = 5
 render = True
 num_frames = 4
 frame_skip = 4
-runs = 5
 rl = True
 use_pcg = True
 pcg_seeds = [random.randint(0, 4_294_967_295) for _ in range(num_levels)]
@@ -31,7 +31,13 @@ if __name__=='__main__':
     for model in best_models:
         for pcg_seed in pcg_seeds:
             use_macro = model.startswith("macro")
-            res = evaluate(render, num_frames, frame_skip, runs, rl, use_macro, use_pcg, pcg_seed, model)
+            res = evaluate(render, num_frames, frame_skip, 5, rl, use_macro, use_pcg, pcg_seed, model, False)
             np.save(f"evaluation/{model}_{pcg_seed}.npy", res)
+
+    for model in best_models:
+        for pcg_seed in pcg_seeds:
+            use_macro = model.startswith("macro")
+            res = evaluate(render, num_frames, frame_skip, 1, rl, use_macro, use_pcg, pcg_seed, model, True)
+            np.save(f"evaluation_determ/{model}_{pcg_seed}.npy", res)
 
     pg.quit()
