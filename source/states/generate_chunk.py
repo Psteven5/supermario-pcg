@@ -1,11 +1,3 @@
-# maps
-# ground
-# pipe 
-# step 
-# coin 
-# brick 
-# box 
-# enemy
 import json
 import random as rd
 import os
@@ -17,7 +9,6 @@ random = rd
 def seed(seed):
     global random
     random = rd.Random(seed)
-
 
 class GenerateChunk():
     def __init__(self, chunk_size, chances=dict(), difficulty=0):

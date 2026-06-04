@@ -154,7 +154,7 @@ class Level(tools.State):
         self.left_bound = 0
         self.mario_pos = 0
 
-        #skill tracking
+        # Used for skill tracking
         self.chunk_start_time = current_time
         self.chunk_time = 0
         self.forward_speed_sum = 0
@@ -227,32 +227,39 @@ class Level(tools.State):
         self.chunk_size = c.CHUNK_SIZE
 
     def check_for_chunk(self):
-        # build next chunk when halfway current chunk
+        # Build next chunk when halfway current chunk
         if self.player.rect.x > self.chunk_size/2 and self.reset:
             self.reset = False
+
+            # Also determine chunk run time and avg speed for difficulty
             if self.current_chunk > 0:
                 self.chunk_time = (self.current_time - self.chunk_start_time) / 1000 # in seconds
 
+                # Determine avg forward speed
                 if self.forward_speed_frames > 0:
                     self.avg_forward_speed = self.forward_speed_sum / self.forward_speed_frames
                 else:
                     self.avg_forward_speed = 0
 
+                # Determine avg time and speed, taking into account last few runs (max 5)
                 avg_time = sum(self.recent_chunk_times) / len(self.recent_chunk_times) if self.recent_chunk_times else self.chunk_time
                 avg_speed = sum(self.recent_chunk_speeds) / len(self.recent_chunk_speeds) if self.recent_chunk_speeds else self.avg_forward_speed
 
+                # Add chunk time and avg speed, and keep only last 5 chunks
                 self.recent_chunk_times.append(self.chunk_time)
                 self.recent_chunk_speeds.append(self.avg_forward_speed)
-                # keep only last 5 chunks
                 self.recent_chunk_times = self.recent_chunk_times[-5:]
                 self.recent_chunk_speeds = self.recent_chunk_speeds[-5:]
 
+                # Calculate time and speed score using chunk time and avg speed
                 time_score = avg_time / (self.chunk_time + 1e-6)
                 speed_score = self.avg_forward_speed / (avg_speed + 1e-6)
 
+                # Determine skill score using previous score and time/speed score
                 previous_skill = self.skill
                 self.skill = 0.6*speed_score + 0.4*time_score
 
+                # diff_skill is used for difficulty
                 self.diff_skill = self.skill - previous_skill
 
                 print(f"Chunk time: {self.chunk_time:.2f}s, Avg time: {avg_time:.2f}s, Time score: {time_score:.2f}, Avg speed: {avg_speed:.2f}, Player speed: {self.avg_forward_speed:.2f}, Speed score: {speed_score:.2f}, Overall skill: {self.skill:.2f}, diff_skill: {self.diff_skill:.2f}")
@@ -264,14 +271,10 @@ class Level(tools.State):
             self.current_chunk += 1
             self.chunk_size = c.CHUNK_SIZE
 
-            # Chances for different level components (between 0.0 and 1.0)
-            # given an array chances:
-            # 0 - gaps, 1 - pipe/stairs, 2 - bricks, 3 - boxes, 4 - enemies
-
             chunk_chances = dict()
-            k = 0.15 # how quickly we increase the difficulty
+            k = 0.15 # Factor of how quickly we increase the difficulty
 
-            # difficulty between 0 and 5 (base is going from 0 to 5)
+            # Difficulty between 0 and 5 (base is going from 0 to 5)
             base = self.get_difficulty(k, self.current_chunk)
             if self.rl:
                 difficulty = base
@@ -282,6 +285,9 @@ class Level(tools.State):
             print(f"Chunk: {self.current_chunk}, Difficulty: {difficulty:.2f}")
             norm_diff = difficulty / 5
 
+            # Chances for different level components (between 0.0 and 1.0)
+            # In order, these are:
+            # Gaps, pipe/stairs, bricks, boxes, enemies, chunk is only bricks, chunk is split in two
             chunk_chances["gaps"] = (c.CHANCE_GAP + (c.END_CHANCE_GAP - c.CHANCE_GAP) * (norm_diff ** c.WEIGHT_GAP))
             chunk_chances["pipestairs"] = (c.CHANCE_PIPESTAIRS + (c.END_CHANCE_PIPESTAIRS - c.CHANCE_PIPESTAIRS) * (norm_diff ** c.WEIGHT_PIPESTAIRS))
             chunk_chances["bricks"] = (c.CHANCE_BRICKS + (c.END_CHANCE_BRICKS - c.CHANCE_BRICKS) * (norm_diff ** c.WEIGHT_BRICKS)) #linear increasing
@@ -294,16 +300,17 @@ class Level(tools.State):
                 generator = generate_chunk.GenerateChunk(self.chunk_size, chunk_chances, difficulty=difficulty)
                 generator.generate_chunk()
                 self.load_next_chunk()
+
         if self.viewport.x > self.shift_threshold and self.use_pcg:
             self.reset = True
             self.reset_map(self.chunk_size)
 
+    # Calculate difficulty using k and number of chunks passed
     def get_difficulty(self, k, chunk_num):
         return c.MAX_DIFFICULTY * (1 - c.EULER_NUM**(-k * chunk_num))
 
-
+    # Load the next PCG chunk from chunk.json
     def load_next_chunk(self, ):
-        # TODO: use load_map to change self.map_data to new level from generated new json file?
         offset_x = self.chunk_size
         map_file = "chunk.json"
         file_path = os.path.join("source", "data", "maps", map_file)
@@ -326,10 +333,11 @@ class Level(tools.State):
                                         enemy_item["x"] += offset_x
         self.add_chunk_to_map_data(new_map_data)
 
+    # Add elements from .json file to ingame map data.
     def add_chunk_to_map_data(self, map_data):
-        #TODO: make use of existing functions (change functions a bit)
         enemy_group_offset = len(self.enemy_group_list)
 
+        # Add ground
         if c.MAP_GROUND in map_data:
             for item in map_data[c.MAP_GROUND]:
                 collider = stuff.Collider(item["x"], item["y"], item["width"], item["height"], c.MAP_GROUND)
@@ -340,18 +348,22 @@ class Level(tools.State):
                     for x in range(item["x"], item["x"] + item["width"], 43):
                         self.ground_group.add(ground.Ground(x, y))
 
+        # Add pipes
         if c.MAP_PIPE in map_data:
             for item in map_data[c.MAP_PIPE]:
                 self.pipe_group.add(stuff.Pipe(item["x"], item["y"], item["width"], item["height"], item["type"]))
 
+        # Add coins
         if c.MAP_COIN in map_data:
             for item in map_data[c.MAP_COIN]:
                 self.static_coin_group.add(coin.StaticCoin(item["x"], item["y"]))
 
+        # Add bricks
         if c.MAP_BRICK in map_data:
             for item in map_data[c.MAP_BRICK]:
                 brick.create_brick(self.brick_group, item, self)
 
+        # Add powerup boxes
         if c.MAP_BOX in map_data:
             for item in map_data[c.MAP_BOX]:
                 if item["type"] == c.TYPE_COIN:
@@ -359,6 +371,7 @@ class Level(tools.State):
                 else:
                     self.box_group.add(box.Box(item["x"], item["y"], item["type"], self.powerup_group))
 
+        # Add enemies
         if c.MAP_ENEMY in map_data:
             for data in map_data[c.MAP_ENEMY]:
                 group = pg.sprite.Group()
@@ -367,6 +380,7 @@ class Level(tools.State):
                         group.add(enemy.create_enemy(item, self))
                 self.enemy_group_list.append(group)
 
+        # Add checkpoints
         if c.MAP_CHECKPOINT in map_data:
             for data in map_data[c.MAP_CHECKPOINT]:
                 if c.ENEMY_GROUPID in data:
@@ -380,6 +394,7 @@ class Level(tools.State):
                 self.checkpoint_group.add(stuff.Checkpoint(data["x"], data["y"], data["width"],
                     data["height"], data["type"], enemy_groupid, map_index))
 
+        # Add flagpole
         if c.MAP_FLAGPOLE in map_data:
             for item in map_data[c.MAP_FLAGPOLE]:
                 if item["type"] == c.FLAGPOLE_TYPE_FLAG:
@@ -391,6 +406,7 @@ class Level(tools.State):
                     sprite = stuff.PoleTop(item["x"], item["y"])
                 self.flagpole_group.add(sprite)
 
+        # Add stair steps
         if c.MAP_STEP in map_data:
             for item in map_data[c.MAP_STEP]:
                 collider = stuff.Collider(item["x"], item["y"], item["width"], item["height"], c.MAP_STEP)
@@ -400,6 +416,7 @@ class Level(tools.State):
                     for x in range(item["x"], item["x"] + item["width"], 43):
                         self.step_group.add(step.Step(x, y))
 
+        # Add sliders
         if c.MAP_SLIDER in map_data:
             for item in map_data[c.MAP_SLIDER]:
                 if c.VELOCITY in item:
@@ -415,6 +432,8 @@ class Level(tools.State):
             self.step_group,
             self.slider_group
         )
+
+    # Delete sprites that are behind the viewport (that the player has passed).
     def delete_old_sprites(self):
         limit = self.viewport.x - c.SCREEN_WIDTH
 
@@ -425,12 +444,14 @@ class Level(tools.State):
             for sprite in group:
                 if sprite.rect.right < limit:
                     sprite.kill()
+
     def reset_map(self, offset):
-        # Shift player
+        # Shift player and keep track of relative mario x-pos for RL
         self.mario_pos += self.player.rect.x
         self.player.rect.x -= offset
         self.last_x -= offset
         self.best_x -= offset
+
         # Shift viewpoint
         self.viewport.x -= offset
 
@@ -439,7 +460,7 @@ class Level(tools.State):
 
         self.left_bound -= offset
 
-        # shift all sprites
+        # Shift all sprites
         for group in [self.ground_group, self.step_group, self.pipe_group, self.slider_group,
                     self.static_coin_group, self.brick_group, self.box_group, self.enemy_group, self.shell_group,
                     self.powerup_group, self.coin_group, self.brickpiece_group,
@@ -556,12 +577,14 @@ class Level(tools.State):
                     )
                 )
 
+    # Function to setup coins on the map.
     def setup_static_coin(self):
         self.static_coin_group = pg.sprite.Group()
         if c.MAP_COIN in self.map_data:
             for data in self.map_data[c.MAP_COIN]:
                 self.static_coin_group.add(coin.StaticCoin(data["x"], data["y"]))
 
+    # Function to set up bricks and powerup boxes on the map.
     def setup_brick_and_box(self):
         self.coin_group = pg.sprite.Group()
         self.powerup_group = pg.sprite.Group()
@@ -597,6 +620,7 @@ class Level(tools.State):
             self.player.rect.bottom = c.DEBUG_START_y
         self.viewport.x = self.player.rect.x - 110
 
+    # Function to set up enemies on the map.
     def setup_enemies(self):
         self.enemy_group_list = []
         index = 0
@@ -607,6 +631,7 @@ class Level(tools.State):
             self.enemy_group_list.append(group)
             index += 1
 
+    # Function to set up checkpoints on the map.
     def setup_checkpoints(self):
         self.checkpoint_group = pg.sprite.Group()
         for data in self.map_data[c.MAP_CHECKPOINT]:
@@ -630,6 +655,7 @@ class Level(tools.State):
                 )
             )
 
+    # Function to set up flagpole on the map.
     def setup_flagpole(self):
         self.flagpole_group = pg.sprite.Group()
         if c.MAP_FLAGPOLE in self.map_data:
@@ -643,6 +669,7 @@ class Level(tools.State):
                     sprite = stuff.PoleTop(data["x"], data["y"])
                 self.flagpole_group.add(sprite)
 
+    # Function to set up sprite groups for all sprites.
     def setup_sprite_groups(self):
         self.dying_group = pg.sprite.Group()
         self.enemy_group = pg.sprite.Group()
@@ -653,7 +680,7 @@ class Level(tools.State):
         )
         self.player_group = pg.sprite.Group(self.player)
 
-# RL PART
+    # RL PART
     def get_relevant_from_group(self, group, entity_type):
         stuffs = []
         for stuff in group:
@@ -1248,16 +1275,12 @@ class Level(tools.State):
         self.moving_score_list.append(stuff.Score(x, y, score))
 
     def draw(self, surface):
-        #self.level.blit(self.background, self.viewport, self.viewport)
         # Repeat the background image infinitely
         bg_width = self.background.get_width()
         rel_x = (self.bg_offset + self.viewport.x) % bg_width
 
         self.level.blit(self.background, (int(self.viewport.x - rel_x), 0))
         self.level.blit(self.background, (int(self.viewport.x - rel_x + bg_width), 0))
-
-        #for x in range(0, self.level.get_width(), bg_width):
-        #    self.level.blit(self.background, (x, 0))
 
         self.ground_group.draw(self.level)
         self.ground_step_pipe_group.draw(self.level)
