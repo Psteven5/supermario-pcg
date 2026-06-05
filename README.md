@@ -42,6 +42,12 @@ For example:
 ```bash
 uv run handle_results_old.py
 ```
+
+To create the plot of the user study for PCG, `./evaluate_user_study.py` can be run using (The data is already present in the file):
+```bash
+uv run evaluate_user_study.py
+```
+
 ### In order to playtest the PCG:
 
 Set `render=True` in `./main.py`.
