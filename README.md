@@ -1,4 +1,5 @@
 # Super Marios Bros PCG
+By Bryan Kaak (s3685918), Guus Oomen (s3690849), Kenji Opdam (s3683591), Alexander Scheerder (s3692442), Pieter Stevens (s3588254), and Tim Zuijderduijn (s3620166)
 
 # Requirements
 The uv command:
